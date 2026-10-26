@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: inventory
+
+  datasource:
+    # MySQL의 inventory DB에 연결 (DB 자체는 미리 만들어져 있어야 함)
+    url: jdbc:mysql://localhost:3306/inventory?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    username: ${DB_USERNAME:root}
+    # 비밀번호는 코드에 적지 않고 환경변수 DB_PASSWORD로 받는다 (깃에 올라가지 않도록)
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      # update: 엔티티를 보고 테이블이 없으면 만들고, 컬럼이 추가되면 반영 (개발 단계용)
+      ddl-auto: update
+    # 실행되는 SQL을 콘솔에 출력 (JPA가 어떤 쿼리를 날리는지 확인용)
+    show-sql: true

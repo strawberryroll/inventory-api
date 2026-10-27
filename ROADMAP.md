@@ -41,7 +41,7 @@ com.example.inventory
 
 ## 현재 단계
 
-**5-5. Git 초기화 및 GitHub 첫 업로드**
+**6단계. 입고·출고 (`StockHistory` 엔티티부터)**
 
 ---
 
@@ -64,7 +64,7 @@ com.example.inventory
     - 없는 id는 예외 발생
 - [x] 5-4. 수정 `PUT /api/products/{id}` (이름·가격만), 삭제 `DELETE /api/products/{id}`
     - 수정은 엔티티 메서드 + 변경 감지(dirty checking) 사용
-- [ ] 5-5. Git 초기화 및 GitHub 첫 업로드 (`.gitignore` 확인)
+- [x] 5-5. Git 초기화 및 GitHub 첫 업로드 (`.gitignore` 확인)
 
 **완료 기준**: Postman으로 5개 API 정상 동작, DBeaver에서 데이터 반영 확인
 
@@ -128,11 +128,11 @@ com.example.inventory
 
 단계를 마칠 때마다 아래 질문에 직접 답할 수 있는지 확인한다.
 
-- [ ] `application.yaml`은 어떤 역할을 하나요?
+- [x] `application.yaml`은 어떤 역할을 하나요?
 - [ ] JPA, Hibernate, Spring Data JPA의 차이는?
-- [ ] Controller, Service, Repository의 역할은?
-- [ ] Entity와 DTO를 왜 나누나요?
+- [x] Controller, Service, Repository의 역할은?
+- [x] Entity와 DTO를 왜 나누나요?
 - [ ] `@Transactional`은 왜 필요한가요?
-- [ ] 변경 감지(dirty checking)란?
+- [x] 변경 감지(dirty checking)란?
 - [ ] 출고 시 재고가 음수가 되지 않게 어떻게 막았나요?
 - [ ] 전역 예외 처리를 왜 했나요?

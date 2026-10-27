@@ -3,6 +3,7 @@ package com.example.inventory.service;
 import com.example.inventory.domain.Product;
 import com.example.inventory.dto.ProductCreateRequest;
 import com.example.inventory.dto.ProductResponse;
+import com.example.inventory.dto.ProductUpdateRequest;
 import com.example.inventory.exception.DuplicateProductCodeException;
 import com.example.inventory.exception.ProductNotFoundException;
 import com.example.inventory.repository.ProductRepository;
@@ -46,10 +47,7 @@ public class ProductService {
 	// readOnly = true: 조회 전용 트랜잭션. 데이터를 바꾸지 않는다는 의도를 밝히고 불필요한 비용을 줄인다.
 	@Transactional(readOnly = true)
 	public ProductResponse getProduct(Long id) {
-		// findById는 Optional(값이 있을 수도 없을 수도 있는 상자)을 반환한다.
-		// 비어 있으면 orElseThrow가 예외를 던져 404로 이어진다.
-		Product product = productRepository.findById(id)
-				.orElseThrow(() -> new ProductNotFoundException(id));
+		Product product = findProductOrThrow(id);
 		return ProductResponse.from(product);
 	}
 
@@ -59,6 +57,32 @@ public class ProductService {
 		return productRepository.findAll().stream()
 				.map(ProductResponse::from)
 				.toList();
+	}
+
+	// 쓰기 작업이므로 readOnly를 쓰지 않는다. 변경 감지(UPDATE)는 트랜잭션이 끝날 때 실행되기 때문에
+	// @Transactional이 없으면 값을 바꿔도 DB에 반영되지 않는다.
+	@Transactional
+	public ProductResponse update(Long id, ProductUpdateRequest request) {
+		Product product = findProductOrThrow(id);
+
+		// save()를 호출하지 않아도 된다. 조회한 엔티티의 값이 바뀌면 JPA가 달라진 부분을 찾아 UPDATE한다.
+		product.update(request.name(), request.price());
+
+		return ProductResponse.from(product);
+	}
+
+	@Transactional
+	public void delete(Long id) {
+		Product product = findProductOrThrow(id);
+		productRepository.delete(product);
+	}
+
+	// 단건 조회·수정·삭제가 함께 쓰는 "없으면 404 예외" 로직
+	// findById는 Optional(값이 있을 수도 없을 수도 있는 상자)을 반환하고,
+	// 비어 있으면 orElseThrow가 예외를 던진다.
+	private Product findProductOrThrow(Long id) {
+		return productRepository.findById(id)
+				.orElseThrow(() -> new ProductNotFoundException(id));
 	}
 
 }

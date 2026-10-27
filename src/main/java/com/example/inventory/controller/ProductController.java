@@ -2,13 +2,16 @@ package com.example.inventory.controller;
 
 import com.example.inventory.dto.ProductCreateRequest;
 import com.example.inventory.dto.ProductResponse;
+import com.example.inventory.dto.ProductUpdateRequest;
 import com.example.inventory.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,6 +45,19 @@ public class ProductController {
 	@GetMapping
 	public List<ProductResponse> getProducts() {
 		return productService.getProducts();
+	}
+
+	// PUT /api/products/1  -> 이름·가격 수정. 수정된 상품을 200 OK로 돌려준다
+	@PutMapping("/{id}")
+	public ProductResponse update(@PathVariable Long id, @RequestBody ProductUpdateRequest request) {
+		return productService.update(id, request);
+	}
+
+	// DELETE /api/products/1  -> 삭제 후 204 No Content (돌려줄 본문이 없다는 의미)
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> delete(@PathVariable Long id) {
+		productService.delete(id);
+		return ResponseEntity.noContent().build();
 	}
 
 }

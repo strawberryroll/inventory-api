@@ -50,6 +50,13 @@ public class Product {
 		this.stockQuantity = stockQuantity;
 	}
 
+	// 이름·가격 수정 규칙을 엔티티가 직접 가진다. (setter를 열어 두지 않는다)
+	// 영속 상태의 엔티티 값이 바뀌면 트랜잭션 종료 시 JPA가 UPDATE를 자동 실행한다(변경 감지).
+	public void update(String name, int price) {
+		this.name = name;
+		this.price = price;
+	}
+
 	// INSERT 직전에 JPA가 자동 호출한다. 그래서 createdAt을 직접 넣지 않아도 된다.
 	@PrePersist
 	void onCreate() {

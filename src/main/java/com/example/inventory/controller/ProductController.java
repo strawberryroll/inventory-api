@@ -4,6 +4,7 @@ import com.example.inventory.dto.ProductCreateRequest;
 import com.example.inventory.dto.ProductResponse;
 import com.example.inventory.dto.ProductUpdateRequest;
 import com.example.inventory.service.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,8 +29,9 @@ public class ProductController {
 
 	// POST /api/products
 	// @RequestBody: 요청 본문의 JSON을 ProductCreateRequest 객체로 변환해 준다
+	// @Valid: DTO의 검증 규칙(@NotBlank 등)을 먼저 실행한다. 어기면 이 메서드는 실행되지 않고 400 응답
 	@PostMapping
-	public ResponseEntity<ProductResponse> create(@RequestBody ProductCreateRequest request) {
+	public ResponseEntity<ProductResponse> create(@Valid @RequestBody ProductCreateRequest request) {
 		ProductResponse response = productService.create(request);
 		// 201 Created: "새 리소스가 만들어졌다"는 의미의 상태 코드
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -49,7 +51,7 @@ public class ProductController {
 
 	// PUT /api/products/1  -> 이름·가격 수정. 수정된 상품을 200 OK로 돌려준다
 	@PutMapping("/{id}")
-	public ProductResponse update(@PathVariable Long id, @RequestBody ProductUpdateRequest request) {
+	public ProductResponse update(@PathVariable Long id, @Valid @RequestBody ProductUpdateRequest request) {
 		return productService.update(id, request);
 	}
 

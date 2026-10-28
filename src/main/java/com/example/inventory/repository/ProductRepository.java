@@ -1,6 +1,8 @@
 package com.example.inventory.repository;
 
 import com.example.inventory.domain.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -14,5 +16,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
 	// SELECT 존재 여부만 확인. 상품 등록 시 코드 중복 검사에 사용할 예정
 	boolean existsByProductCode(String productCode);
+
+	// 검색: 이름 또는 상품코드에 키워드가 포함된 상품 (대소문자 무시, 페이징)
+	// Containing -> LIKE '%키워드%', IgnoreCase -> 대소문자 무시, Or -> 둘 중 하나만 맞아도 포함
+	// 같은 키워드를 name, productCode 두 인자에 모두 넘긴다. (키워드의 %, _ 는 Spring Data가 이스케이프해 준다)
+	Page<Product> findByNameContainingIgnoreCaseOrProductCodeContainingIgnoreCase(
+			String name, String productCode, Pageable pageable);
 
 }

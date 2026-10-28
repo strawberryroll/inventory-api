@@ -12,6 +12,7 @@ import com.example.inventory.repository.ProductRepository;
 import com.example.inventory.repository.StockHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -65,14 +66,22 @@ public class ProductService {
 	}
 
 	@Transactional(readOnly = true)
-	public PageResponse<ProductResponse> getProducts(Pageable pageable) {
+	public PageResponse<ProductResponse> getProducts(String keyword, Pageable pageable) {
 		// 클라이언트가 보낸 sort는 무시하고 최신순(id 내림차순)으로 고정한다.
 		// (없는 필드명으로 정렬을 요청해 500 오류가 나는 것을 막기 위해서)
 		Pageable fixed = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "id"));
 
-		// findAll(Pageable): LIMIT/OFFSET 쿼리와 전체 개수를 세는 COUNT 쿼리가 함께 실행된다.
+		// 키워드가 없거나 공백뿐이면 검색하지 않고 전체 목록을 돌려준다.
+		// findAll(Pageable)/검색 모두 LIMIT/OFFSET 쿼리와 전체 개수를 세는 COUNT 쿼리가 함께 실행된다.
 		// Page.map(): 엔티티 페이지를 DTO 페이지로 바꾼다.
-		return PageResponse.from(productRepository.findAll(fixed).map(ProductResponse::from));
+		Page<Product> products;
+		if (keyword == null || keyword.isBlank()) {
+			products = productRepository.findAll(fixed);
+		} else {
+			String trimmed = keyword.trim();
+			products = productRepository.findByNameContainingIgnoreCaseOrProductCodeContainingIgnoreCase(trimmed, trimmed, fixed);
+		}
+		return PageResponse.from(products.map(ProductResponse::from));
 	}
 
 	// 쓰기 작업이므로 readOnly를 쓰지 않는다. 변경 감지(UPDATE)는 트랜잭션이 끝날 때 실행되기 때문에

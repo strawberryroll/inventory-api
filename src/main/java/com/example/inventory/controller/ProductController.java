@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -43,11 +44,14 @@ public class ProductController {
 		return productService.getProduct(id);
 	}
 
-	// GET /api/products?page=0&size=10  -> 페이지 단위 목록
+	// GET /api/products?page=0&size=10            -> 페이지 단위 전체 목록
+	// GET /api/products?keyword=볼트              -> 이름 또는 상품코드에 "볼트"가 포함된 상품 검색
 	// Pageable을 파라미터로 선언하면 Spring이 쿼리스트링(page, size)을 읽어 객체로 만들어 준다. (@RequestParam 불필요)
+	// @RequestParam(required = false): 쿼리스트링의 keyword를 받고, 안 보내도 오류가 나지 않는다. (null이 됨)
 	@GetMapping
-	public PageResponse<ProductResponse> getProducts(Pageable pageable) {
-		return productService.getProducts(pageable);
+	public PageResponse<ProductResponse> getProducts(
+			@RequestParam(required = false) String keyword, Pageable pageable) {
+		return productService.getProducts(keyword, pageable);
 	}
 
 	// PUT /api/products/1  -> 이름·가격 수정. 수정된 상품을 200 OK로 돌려준다

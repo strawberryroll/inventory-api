@@ -104,7 +104,7 @@ com.example.inventory
 - [x] 8-5. Swagger/OpenAPI 문서 (springdoc, `/swagger-ui.html`)
 
 ### 9단계. 포트폴리오 마무리
-- [ ] README.md: 목적, 기술 스택, 실행 방법, API 목록·예시, 테이블 구조(ERD), 고민한 점, 개선 예정
+- [x] README.md: 목적, 기술 스택, 실행 방법, API 목록·예시, 테이블 구조(ERD), 고민한 점, 개선 예정
 - [ ] (선택) Docker로 MySQL + 앱 실행
 - [ ] (선택) 지원 회사 DB(Oracle/MSSQL)로 전환 테스트
 
@@ -140,10 +140,10 @@ com.example.inventory
 단계를 마칠 때마다 아래 질문에 직접 답할 수 있는지 확인한다.
 
 - [x] `application.yaml`은 어떤 역할을 하나요?
-- [ ] JPA, Hibernate, Spring Data JPA의 차이는?
+- [x] JPA, Hibernate, Spring Data JPA의 차이는?
 - [x] Controller, Service, Repository의 역할은?
 - [x] Entity와 DTO를 왜 나누나요?
 - [x] `@Transactional`은 왜 필요한가요?
 - [x] 변경 감지(dirty checking)란?
 - [x] 출고 시 재고가 음수가 되지 않게 어떻게 막았나요?
-- [ ] 전역 예외 처리를 왜 했나요?
+- [x] 전역 예외 처리를 왜 했나요?

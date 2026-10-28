@@ -1,0 +1,34 @@
+package com.example.inventory.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+// @RestControllerAdvice: 모든 Controller에서 던져진 예외를 이 클래스가 한 곳에서 받아 JSON 응답으로 바꾼다.
+// (Controller마다 try-catch를 쓰지 않아도 되고, 에러 응답 형식을 여기서 통일한다)
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+	// @ExceptionHandler: 이 예외가 던져지면 아래 메서드가 실행된다. 상태 코드와 응답 본문을 모두 정할 수 있다.
+	@ExceptionHandler(ProductNotFoundException.class)
+	public ResponseEntity<ErrorResponse> handleProductNotFound(ProductNotFoundException e) {
+		return toResponse(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", e.getMessage());
+	}
+
+	@ExceptionHandler(DuplicateProductCodeException.class)
+	public ResponseEntity<ErrorResponse> handleDuplicateProductCode(DuplicateProductCodeException e) {
+		return toResponse(HttpStatus.CONFLICT, "DUPLICATE_PRODUCT_CODE", e.getMessage());
+	}
+
+	@ExceptionHandler(InsufficientStockException.class)
+	public ResponseEntity<ErrorResponse> handleInsufficientStock(InsufficientStockException e) {
+		return toResponse(HttpStatus.BAD_REQUEST, "INSUFFICIENT_STOCK", e.getMessage());
+	}
+
+	// 핸들러마다 반복되는 응답 생성 코드를 한 곳으로 모은다.
+	private ResponseEntity<ErrorResponse> toResponse(HttpStatus status, String code, String message) {
+		return ResponseEntity.status(status).body(new ErrorResponse(status.value(), code, message));
+	}
+
+}

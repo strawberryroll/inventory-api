@@ -1,11 +1,6 @@
 package com.example.inventory.exception;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
-
-// 이 예외가 Controller 밖으로 던져지면 Spring이 HTTP 404(Not Found)로 응답한다.
-// (7단계에서 @RestControllerAdvice 전역 예외 처리로 교체 예정)
-@ResponseStatus(HttpStatus.NOT_FOUND)
+// 없는 상품을 조회·수정·삭제하려 할 때 던진다. 404 응답으로의 변환은 GlobalExceptionHandler가 담당한다.
 public class ProductNotFoundException extends RuntimeException {
 
 	public ProductNotFoundException(Long id) {

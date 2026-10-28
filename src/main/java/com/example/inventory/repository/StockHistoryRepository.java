@@ -11,4 +11,7 @@ public interface StockHistoryRepository extends JpaRepository<StockHistory, Long
 	// ProductId -> product.id 로 연관관계를 따라가며 WHERE product_id = ?, OrderByCreatedAtDesc -> 최신순 정렬
 	List<StockHistory> findByProductIdOrderByCreatedAtDesc(Long productId);
 
+	// 해당 상품의 이력이 한 건이라도 있는지만 확인한다. 상품 삭제 전 검사에 사용
+	boolean existsByProductId(Long productId);
+
 }

@@ -1,5 +1,6 @@
 package com.example.inventory.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -28,6 +29,18 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(InsufficientStockException.class)
 	public ResponseEntity<ErrorResponse> handleInsufficientStock(InsufficientStockException e) {
 		return toResponse(HttpStatus.BAD_REQUEST, "INSUFFICIENT_STOCK", e.getMessage());
+	}
+
+	@ExceptionHandler(ProductHasHistoryException.class)
+	public ResponseEntity<ErrorResponse> handleProductHasHistory(ProductHasHistoryException e) {
+		return toResponse(HttpStatus.CONFLICT, "PRODUCT_HAS_HISTORY", e.getMessage());
+	}
+
+	// 안전망: 사전 검사로 못 막은 DB 제약 위반(unique, 외래키 등)이 500 대신 409로 나가게 한다.
+	// Spring이 DB 종류와 상관없이 제약 위반을 이 예외로 변환해 준다. SQL 오류 내용은 응답에 노출하지 않는다.
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+		return toResponse(HttpStatus.CONFLICT, "DATA_INTEGRITY_VIOLATION", "데이터 제약 조건에 위반되어 처리할 수 없습니다");
 	}
 
 	// @Valid 검증에 실패하면 Spring이 이 예외를 던진다. Controller 메서드가 실행되기 전이라 Service·DB에는 닿지 않는다.

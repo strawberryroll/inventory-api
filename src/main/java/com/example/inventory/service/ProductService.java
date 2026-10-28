@@ -5,9 +5,12 @@ import com.example.inventory.dto.ProductCreateRequest;
 import com.example.inventory.dto.ProductResponse;
 import com.example.inventory.dto.ProductUpdateRequest;
 import com.example.inventory.exception.DuplicateProductCodeException;
+import com.example.inventory.exception.ProductHasHistoryException;
 import com.example.inventory.exception.ProductNotFoundException;
 import com.example.inventory.repository.ProductRepository;
+import com.example.inventory.repository.StockHistoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +23,7 @@ import java.util.List;
 public class ProductService {
 
 	private final ProductRepository productRepository;
+	private final StockHistoryRepository stockHistoryRepository;
 
 	// @Transactional: 메서드 전체를 하나의 트랜잭션으로 묶는다. 중간에 예외가 나면 DB 변경이 롤백된다.
 	@Transactional
@@ -38,7 +42,14 @@ public class ProductService {
 		);
 
 		// 3. 저장 (INSERT). 저장된 Entity에는 id와 createdAt이 채워져 돌아온다.
-		Product saved = productRepository.save(product);
+		Product saved;
+		try {
+			saved = productRepository.save(product);
+		} catch (DataIntegrityViolationException e) {
+			// 1번 검사를 통과한 뒤 같은 코드의 요청이 동시에 먼저 저장되면 DB의 unique 제약이 막아 준다.
+			// 사전 검사는 친절한 메시지용이고, DB 제약은 그 틈을 막는 마지막 방어선이다.
+			throw new DuplicateProductCodeException(request.productCode());
+		}
 
 		// 4. Entity -> 응답 DTO 변환 후 반환
 		return ProductResponse.from(saved);
@@ -74,6 +85,12 @@ public class ProductService {
 	@Transactional
 	public void delete(Long id) {
 		Product product = findProductOrThrow(id);
+
+		// 이력이 있으면 삭제하지 않는다. (그냥 지우면 stock_histories의 외래키 제약 때문에 DB 오류 500이 난다)
+		if (stockHistoryRepository.existsByProductId(id)) {
+			throw new ProductHasHistoryException(id);
+		}
+
 		productRepository.delete(product);
 	}
 

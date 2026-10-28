@@ -1,0 +1,16 @@
+# 배포용 설정. 환경변수 SPRING_PROFILES_ACTIVE=prod 일 때 application.yaml 위에 덮어쓴다.
+# (여기에 없는 항목은 application.yaml의 값을 그대로 쓴다)
+spring:
+  datasource:
+    hikari:
+      # DB 연결을 최대 5개만 연다. (기본 10개. 무료 DB는 동시 접속 수 제한이 작은 경우가 많다)
+      maximum-pool-size: 5
+
+  jpa:
+    # 배포 서버에서는 실행되는 SQL을 전부 출력하지 않는다
+    show-sql: false
+
+server:
+  # 배포 환경에서는 앞단 프록시가 https 요청을 받아 앱에는 http로 전달한다.
+  # 프록시가 알려 주는 원래 주소(X-Forwarded-* 헤더)를 따르게 해서, Swagger UI가 https 주소로 요청하게 한다.
+  forward-headers-strategy: framework

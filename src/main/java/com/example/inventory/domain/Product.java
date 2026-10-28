@@ -1,5 +1,6 @@
 package com.example.inventory.domain;
 
+import com.example.inventory.exception.InsufficientStockException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -61,6 +62,15 @@ public class Product {
 	// update()와 마찬가지로 값만 바꾸면 변경 감지로 UPDATE가 실행된다.
 	public void increaseStock(int quantity) {
 		this.stockQuantity += quantity;
+	}
+
+	// 출고: 재고를 줄인다. "재고는 음수가 될 수 없다"는 규칙을 엔티티가 직접 지킨다.
+	// 조건이 < 이므로 재고와 같은 수량(10 -> 10)은 출고되어 0이 되고, 1개라도 초과하면 예외가 난다.
+	public void decreaseStock(int quantity) {
+		if (this.stockQuantity < quantity) {
+			throw new InsufficientStockException(this.stockQuantity, quantity);
+		}
+		this.stockQuantity -= quantity;
 	}
 
 	// INSERT 직전에 JPA가 자동 호출한다. 그래서 createdAt을 직접 넣지 않아도 된다.

@@ -35,4 +35,20 @@ public class StockService {
 		return ProductResponse.from(product);
 	}
 
+	// 출고도 재고 변경과 이력 저장을 하나의 트랜잭션으로 묶는다.
+	@Transactional
+	public ProductResponse stockOut(Long productId, int quantity) {
+		Product product = productRepository.findById(productId)
+				.orElseThrow(() -> new ProductNotFoundException(productId));
+
+		// 재고가 부족하면 여기서 InsufficientStockException이 던져진다.
+		// 그러면 아래 이력 저장은 실행되지 않고, 트랜잭션도 롤백되어 DB는 아무것도 바뀌지 않는다.
+		product.decreaseStock(quantity);
+
+		// 출고 이력 저장 (INSERT)
+		stockHistoryRepository.save(new StockHistory(product, StockType.OUT, quantity));
+
+		return ProductResponse.from(product);
+	}
+
 }

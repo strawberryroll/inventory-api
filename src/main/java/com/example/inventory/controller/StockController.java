@@ -26,4 +26,10 @@ public class StockController {
 		return stockService.stockIn(id, request.quantity());
 	}
 
+	// POST /api/products/1/stock-out  (같은 StockRequest를 재사용한다)
+	@PostMapping("/stock-out")
+	public ProductResponse stockOut(@PathVariable Long id, @Valid @RequestBody StockRequest request) {
+		return stockService.stockOut(id, request.quantity());
+	}
+
 }

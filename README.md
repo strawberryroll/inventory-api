@@ -71,6 +71,31 @@ IntelliJ에서 실행한다면 실행 구성(Run Configuration)의 Environment v
 | http://localhost:8080/v3/api-docs | OpenAPI 명세 (JSON) |
 | http://localhost:8080/hello | 서버 동작 확인용 |
 
+## Docker로 실행하기
+
+MySQL을 따로 설치하지 않아도 **앱과 DB를 한 번에** 실행할 수 있습니다. ([Docker Desktop](https://www.docker.com/products/docker-desktop/) 필요)
+
+```bash
+cp .env.example .env        # .env 파일을 열어 DB_PASSWORD 값을 채웁니다
+docker compose up --build
+```
+
+- 접속: http://localhost:8080/swagger-ui.html
+- 내 컴퓨터에서 이미 8080 포트를 쓰고 있다면 `APP_PORT=8081 docker compose up --build`처럼 바꿔서 실행하세요.
+- 중지: `docker compose down` (데이터는 유지) / 데이터까지 삭제: `docker compose down -v`
+- `.env`는 Git에 올라가지 않습니다. 비밀번호는 이 파일(또는 환경변수 `DB_PASSWORD`)로만 전달합니다.
+- `docker-compose.yml`은 앱의 메모리를 512MB로 제한해서 무료 배포 서버와 비슷한 조건으로 실행합니다. 이 조건에서도 전체 Postman Collection(74개 요청)이 통과합니다.
+
+### 배포용 환경변수
+
+| 환경변수 | 설명 |
+|---|---|
+| `SPRING_PROFILES_ACTIVE` | `prod`로 두면 배포용 설정(`application-prod.yaml`)이 적용됩니다: SQL 로그 끄기, DB 연결 수 5개로 제한, 프록시 뒤에서 https 인식 |
+| `DB_URL` | MySQL JDBC 주소. 없으면 `jdbc:mysql://localhost:3306/inventory...` (외부 DB는 보통 SSL 옵션이 필요) |
+| `DB_USERNAME` | DB 사용자명 (기본 `root`) |
+| `DB_PASSWORD` | DB 비밀번호 (필수) |
+| `PORT` | 서버 포트. 배포 플랫폼이 지정해 주며, 없으면 8080 |
+
 ## 테스트
 
 ### 자동 테스트 (JUnit)

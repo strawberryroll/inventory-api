@@ -57,6 +57,12 @@ public class Product {
 		this.price = price;
 	}
 
+	// 입고: 재고를 늘린다. 수량이 양수인지는 요청 DTO(@Positive)에서 이미 검증한다.
+	// update()와 마찬가지로 값만 바꾸면 변경 감지로 UPDATE가 실행된다.
+	public void increaseStock(int quantity) {
+		this.stockQuantity += quantity;
+	}
+
 	// INSERT 직전에 JPA가 자동 호출한다. 그래서 createdAt을 직접 넣지 않아도 된다.
 	@PrePersist
 	void onCreate() {

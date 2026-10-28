@@ -30,6 +30,10 @@
       "value": ""
     },
     {
+      "key": "lowProductId",
+      "value": ""
+    },
+    {
       "key": "longName",
       "value": ""
     },
@@ -2485,6 +2489,437 @@
                 "api",
                 "products",
                 "{{searchProductId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. 재고 부족 조회",
+      "item": [
+        {
+          "name": "[POST] 재고 부족 확인용 상품 등록 (재고 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"lowProductId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"T{{runId}}-LOW\",\n  \"name\": \"재고부족테스트{{runId}}\",\n  \"price\": 100,\n  \"stockQuantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[GET] threshold=2 - 재고 2인 상품 포함",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"응답 필드가 정확히 5개\", () => pm.expect(pm.response.json()).to.have.all.keys(\"content\", \"page\", \"size\", \"totalElements\", \"totalPages\"));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"방금 등록한 재고 2 상품이 포함됨\", () => pm.expect(b.content.map(p => p.id)).to.include(Number(pm.collectionVariables.get(\"lowProductId\"))));",
+                  "pm.test(\"모든 상품의 재고가 2 이하\", () => b.content.forEach(p => pm.expect(p.stockQuantity).to.be.at.most(2)));",
+                  "const stocks = pm.response.json().content.map(p => p.stockQuantity);",
+                  "pm.test(\"재고 오름차순(적은 것부터)\", () => pm.expect(stocks).to.eql([...stocks].sort((a, b) => a - b)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/low-stock?threshold=2&size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "low-stock"
+              ],
+              "query": [
+                {
+                  "key": "threshold",
+                  "value": "2"
+                },
+                {
+                  "key": "size",
+                  "value": "100"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] threshold=1 - 재고 2인 상품 제외",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"재고 2 상품은 빠짐\", () => pm.expect(b.content.map(p => p.id)).to.not.include(Number(pm.collectionVariables.get(\"lowProductId\"))));",
+                  "pm.test(\"모든 상품의 재고가 1 이하\", () => b.content.forEach(p => pm.expect(p.stockQuantity).to.be.at.most(1)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/low-stock?threshold=1&size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "low-stock"
+              ],
+              "query": [
+                {
+                  "key": "threshold",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "100"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] threshold 생략 - 기본값 10",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"응답 필드가 정확히 5개\", () => pm.expect(pm.response.json()).to.have.all.keys(\"content\", \"page\", \"size\", \"totalElements\", \"totalPages\"));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"재고가 모두 10 이하\", () => b.content.forEach(p => pm.expect(p.stockQuantity).to.be.at.most(10)));",
+                  "const stocks = pm.response.json().content.map(p => p.stockQuantity);",
+                  "pm.test(\"재고 오름차순(적은 것부터)\", () => pm.expect(stocks).to.eql([...stocks].sort((a, b) => a - b)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/low-stock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "low-stock"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] threshold=0 - 재고 0인 상품만",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"모두 재고 0\", () => pm.response.json().content.forEach(p => pm.expect(p.stockQuantity).to.eql(0)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/low-stock?threshold=0&size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "low-stock"
+              ],
+              "query": [
+                {
+                  "key": "threshold",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "100"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] 큰 threshold + size=3 - 페이징과 재고 오름차순",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"size 3, content는 최대 3개\", () => {",
+                  "    pm.expect(b.size).to.eql(3);",
+                  "    pm.expect(b.content.length).to.be.at.most(3);",
+                  "});",
+                  "const stocks = pm.response.json().content.map(p => p.stockQuantity);",
+                  "pm.test(\"재고 오름차순(적은 것부터)\", () => pm.expect(stocks).to.eql([...stocks].sort((a, b) => a - b)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/low-stock?threshold=1000000&size=3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "low-stock"
+              ],
+              "query": [
+                {
+                  "key": "threshold",
+                  "value": "1000000"
+                },
+                {
+                  "key": "size",
+                  "value": "3"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] sort=id,asc 요청은 무시되고 재고 오름차순 유지",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "const stocks = pm.response.json().content.map(p => p.stockQuantity);",
+                  "pm.test(\"재고 오름차순(적은 것부터)\", () => pm.expect(stocks).to.eql([...stocks].sort((a, b) => a - b)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/low-stock?threshold=1000000&sort=id,asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "low-stock"
+              ],
+              "query": [
+                {
+                  "key": "threshold",
+                  "value": "1000000"
+                },
+                {
+                  "key": "sort",
+                  "value": "id,asc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] threshold=-1 -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"message에 threshold 안내\", () => pm.expect(pm.response.json().message).to.include(\"threshold\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/low-stock?threshold=-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "low-stock"
+              ],
+              "query": [
+                {
+                  "key": "threshold",
+                  "value": "-1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] threshold=abc -> 400 (우리 에러 형식)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"에러 응답 형식 통일(status, code, message)\", () => pm.expect(pm.response.json()).to.have.all.keys(\"status\", \"code\", \"message\"));",
+                  "pm.test(\"message에 파라미터 이름 포함\", () => pm.expect(pm.response.json().message).to.include(\"threshold\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/low-stock?threshold=abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "low-stock"
+              ],
+              "query": [
+                {
+                  "key": "threshold",
+                  "value": "abc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] 경로의 id가 문자(/api/products/abc) -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"message에 id 안내\", () => pm.expect(pm.response.json().message).to.include(\"id\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "abc"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[DELETE] 재고 부족 확인용 상품 정리 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{lowProductId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{lowProductId}}"
               ]
             }
           }

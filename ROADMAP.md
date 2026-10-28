@@ -41,7 +41,7 @@ com.example.inventory
 
 ## 현재 단계
 
-**6단계. 입고·출고 (`StockHistory` 엔티티부터)**
+**6-3. 출고 API**
 
 ---
 
@@ -69,14 +69,19 @@ com.example.inventory
 **완료 기준**: Postman으로 5개 API 정상 동작, DBeaver에서 데이터 반영 확인
 
 ### 6단계. 입고·출고
-- [ ] `StockHistory` 엔티티 (`@ManyToOne`으로 Product 연결, type: IN/OUT, quantity, createdAt)
-- [ ] 입고 `POST /api/products/{id}/stock-in`
-- [ ] 출고 `POST /api/products/{id}/stock-out` (재고보다 많이 출고하면 예외)
-- [ ] 상품별 입출고 이력 조회 `GET /api/products/{id}/stock-histories`
-- [ ] 수량 변경 로직은 엔티티 메서드(`increaseStock`, `decreaseStock`)에 둔다
-- [ ] Service에 `@Transactional` 적용
+- [x] 6-1. `StockHistory` 엔티티 (`@ManyToOne`으로 Product 연결, type: IN/OUT, quantity, createdAt) + `StockType` enum + `StockHistoryRepository`
+- [x] 6-2. 입고 `POST /api/products/{id}/stock-in`
+    - `Product.increaseStock` 엔티티 메서드, `StockService`에 `@Transactional` 적용
+    - 재고 변경과 이력 저장을 하나의 트랜잭션으로 처리
+- [ ] 6-3. 출고 `POST /api/products/{id}/stock-out` (재고보다 많이 출고하면 예외)
+    - `Product.decreaseStock` 엔티티 메서드, `InsufficientStockException`
+- [ ] 6-4. 상품별 입출고 이력 조회 `GET /api/products/{id}/stock-histories`
 
 **완료 기준**: 재고 10개에 20개 출고 시 에러, 이력 테이블에 기록 확인
+
+**메모**
+- 이력이 있는 상품은 FK 때문에 삭제가 막힘 → 7단계에서 `409 Conflict`로 처리 검토
+- 동시에 출고하면 재고가 음수가 될 수 있음(동시성) → 락/`@Version`은 개선 예정으로 남김
 
 ### 7단계. 예외 처리 · 유효성 검사
 - [ ] 요청 DTO에 `@NotBlank`, `@Positive`, `@PositiveOrZero` 등 적용 + `@Valid`
@@ -108,7 +113,7 @@ com.example.inventory
 | 상품 단건 | GET | `/api/products/{id}` | ✅ |
 | 상품 수정 | PUT | `/api/products/{id}` | ✅ |
 | 상품 삭제 | DELETE | `/api/products/{id}` | ✅ |
-| 입고 | POST | `/api/products/{id}/stock-in` | ⬜ |
+| 입고 | POST | `/api/products/{id}/stock-in` | ✅ |
 | 출고 | POST | `/api/products/{id}/stock-out` | ⬜ |
 | 입출고 이력 | GET | `/api/products/{id}/stock-histories` | ⬜ |
 | 재고 부족 조회 | GET | `/api/products/low-stock?threshold=10` | ⬜ |

@@ -41,7 +41,7 @@ com.example.inventory
 
 ## 현재 단계
 
-**8단계. 추가 기능**
+**9단계. 포트폴리오 마무리 (README.md)**
 
 ---
 
@@ -97,11 +97,11 @@ com.example.inventory
     - 7-1~7-3의 Postman 시나리오를 재실행해 응답이 그대로인지 회귀 확인
 
 ### 8단계. 추가 기능
-- [ ] 재고 부족 상품 조회 `GET /api/products/low-stock?threshold=10`
-- [ ] 상품명·코드 검색
-- [ ] 목록 페이징
-- [ ] Service 단위 테스트 (JUnit)
-- [ ] Swagger/OpenAPI 문서
+- [x] 8-1. 목록 페이징 `GET /api/products?page=0&size=10` (`PageResponse`, 정렬은 최신순 고정)
+- [x] 8-2. 상품명·코드 검색 `GET /api/products?keyword=볼트` (이름·코드 부분 일치, 페이징 적용)
+- [x] 8-3. 재고 부족 상품 조회 `GET /api/products/low-stock?threshold=10` (페이징 적용, 타입 오류 `MethodArgumentTypeMismatchException` 처리)
+- [x] 8-4. Service 단위 테스트 (JUnit + Mockito, H2 테스트 프로파일, 통합 테스트)
+- [x] 8-5. Swagger/OpenAPI 문서 (springdoc, `/swagger-ui.html`)
 
 ### 9단계. 포트폴리오 마무리
 - [ ] README.md: 목적, 기술 스택, 실행 방법, API 목록·예시, 테이블 구조(ERD), 고민한 점, 개선 예정
@@ -122,7 +122,7 @@ com.example.inventory
 | 입고 | POST | `/api/products/{id}/stock-in` | ✅ |
 | 출고 | POST | `/api/products/{id}/stock-out` | ✅ |
 | 입출고 이력 | GET | `/api/products/{id}/stock-histories` | ✅ |
-| 재고 부족 조회 | GET | `/api/products/low-stock?threshold=10` | ⬜ |
+| 재고 부족 조회 | GET | `/api/products/low-stock?threshold=10` | ✅ |
 
 ## Claude Code 작업 규칙
 

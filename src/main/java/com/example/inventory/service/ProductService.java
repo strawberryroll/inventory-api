@@ -1,6 +1,7 @@
 package com.example.inventory.service;
 
 import com.example.inventory.domain.Product;
+import com.example.inventory.dto.PageResponse;
 import com.example.inventory.dto.ProductCreateRequest;
 import com.example.inventory.dto.ProductResponse;
 import com.example.inventory.dto.ProductUpdateRequest;
@@ -11,10 +12,11 @@ import com.example.inventory.repository.ProductRepository;
 import com.example.inventory.repository.StockHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 // @Service: 비즈니스 규칙(중복 검사 등)을 담당하는 클래스로 Spring이 관리한다.
 @Service
@@ -63,11 +65,14 @@ public class ProductService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<ProductResponse> getProducts() {
-		// findAll() 결과의 각 Product를 ProductResponse로 바꿔 리스트로 모은다. (JS의 array.map과 비슷)
-		return productRepository.findAll().stream()
-				.map(ProductResponse::from)
-				.toList();
+	public PageResponse<ProductResponse> getProducts(Pageable pageable) {
+		// 클라이언트가 보낸 sort는 무시하고 최신순(id 내림차순)으로 고정한다.
+		// (없는 필드명으로 정렬을 요청해 500 오류가 나는 것을 막기 위해서)
+		Pageable fixed = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "id"));
+
+		// findAll(Pageable): LIMIT/OFFSET 쿼리와 전체 개수를 세는 COUNT 쿼리가 함께 실행된다.
+		// Page.map(): 엔티티 페이지를 DTO 페이지로 바꾼다.
+		return PageResponse.from(productRepository.findAll(fixed).map(ProductResponse::from));
 	}
 
 	// 쓰기 작업이므로 readOnly를 쓰지 않는다. 변경 감지(UPDATE)는 트랜잭션이 끝날 때 실행되기 때문에

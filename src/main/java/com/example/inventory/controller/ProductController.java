@@ -1,11 +1,13 @@
 package com.example.inventory.controller;
 
+import com.example.inventory.dto.PageResponse;
 import com.example.inventory.dto.ProductCreateRequest;
 import com.example.inventory.dto.ProductResponse;
 import com.example.inventory.dto.ProductUpdateRequest;
 import com.example.inventory.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,8 +18,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 // 이 클래스의 모든 URL 앞에 /api/products가 붙는다
@@ -43,10 +43,11 @@ public class ProductController {
 		return productService.getProduct(id);
 	}
 
-	// GET /api/products  -> 전체 목록 (페이징·정렬은 8단계에서 추가 예정)
+	// GET /api/products?page=0&size=10  -> 페이지 단위 목록
+	// Pageable을 파라미터로 선언하면 Spring이 쿼리스트링(page, size)을 읽어 객체로 만들어 준다. (@RequestParam 불필요)
 	@GetMapping
-	public List<ProductResponse> getProducts() {
-		return productService.getProducts();
+	public PageResponse<ProductResponse> getProducts(Pageable pageable) {
+		return productService.getProducts(pageable);
 	}
 
 	// PUT /api/products/1  -> 이름·가격 수정. 수정된 상품을 200 OK로 돌려준다

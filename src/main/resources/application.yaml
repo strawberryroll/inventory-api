@@ -22,3 +22,8 @@ spring:
         # 페이지 크기를 안 보냈을 때 기본값, 그리고 한 번에 가져갈 수 있는 최대 크기
         default-page-size: 10
         max-page-size: 100
+
+springdoc:
+  swagger-ui:
+    # 같은 그룹 안에서 API를 코드에 적은 순서대로 보여 준다
+    operations-sorter: method

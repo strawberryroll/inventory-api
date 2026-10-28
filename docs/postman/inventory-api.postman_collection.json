@@ -2925,6 +2925,86 @@
           }
         }
       ]
+    },
+    {
+      "name": "8. API 문서 (Swagger)",
+      "item": [
+        {
+          "name": "[GET] /v3/api-docs - OpenAPI 명세가 생성됨",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "pm.test(\"OpenAPI 3.x 명세\", () => pm.expect(d.openapi).to.match(/^3\\./));",
+                  "pm.test(\"모든 API 경로가 문서에 포함\", () => {",
+                  "    [\"/api/products\", \"/api/products/{id}\", \"/api/products/low-stock\",",
+                  "     \"/api/products/{id}/stock-in\", \"/api/products/{id}/stock-out\", \"/api/products/{id}/stock-histories\"]",
+                  "        .forEach(p => pm.expect(d.paths).to.have.property(p));",
+                  "});",
+                  "pm.test(\"모든 API에 성공 응답(2xx)이 정의됨\", () => {",
+                  "    Object.keys(d.paths).forEach(path => Object.keys(d.paths[path]).forEach(method => {",
+                  "        const codes = Object.keys(d.paths[path][method].responses);",
+                  "        pm.expect(codes.some(c => c.startsWith(\"2\")), method.toUpperCase() + \" \" + path).to.be.true;",
+                  "    }));",
+                  "});",
+                  "pm.test(\"목록 API 문서에 무시되는 sort 파라미터가 없음\", () => {",
+                  "    const names = d.paths[\"/api/products\"].get.parameters.map(p => p.name);",
+                  "    pm.expect(names).to.have.members([\"keyword\", \"page\", \"size\"]);",
+                  "});",
+                  "pm.test(\"서버 확인용 /hello는 문서에 노출되지 않음\", () => pm.expect(d.paths).to.not.have.property(\"/hello\"));",
+                  "pm.test(\"오류 응답 형식(ErrorResponse)이 스키마로 문서화됨\", () => pm.expect(d.components.schemas).to.have.property(\"ErrorResponse\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/api-docs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "api-docs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] /swagger-ui/index.html - Swagger UI 화면",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/swagger-ui/index.html",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "swagger-ui",
+                "index.html"
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }

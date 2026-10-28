@@ -1,0 +1,43 @@
+# 앱과 MySQL을 한 번에 실행한다.   실행: docker compose up --build
+# 비밀번호는 .env 파일(Git에 올라가지 않음) 또는 환경변수 DB_PASSWORD로 받는다. (.env.example 참고)
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      # DB_PASSWORD가 없으면 "필요합니다" 메시지와 함께 실행을 멈춘다. (빈 비밀번호로 뜨는 실수 방지)
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD 환경변수가 필요합니다 (.env 파일 또는 export로 설정)}
+      MYSQL_DATABASE: inventory
+    # ports를 일부러 적지 않았다. 컨테이너끼리만 mysql:3306으로 접속하고 내 컴퓨터에는 열지 않는다.
+    # (내 컴퓨터에 설치된 MySQL의 3306 포트와 충돌하지 않는다)
+    volumes:
+      # 컨테이너를 껐다 켜도 데이터가 남도록 볼륨에 저장한다. (docker compose down -v 로 삭제)
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      # MySQL이 실제로 연결을 받을 준비가 됐는지 확인한다. (127.0.0.1은 초기화가 끝난 서버에만 응답한다)
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  app:
+    build: .
+    # MySQL이 준비된 뒤에 앱을 시작한다.
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+    ports:
+      # 내 컴퓨터에서 앱이 이미 8080을 쓰고 있다면 APP_PORT=8081 처럼 바꿔서 실행한다.
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # 컨테이너 안에서는 서비스 이름(mysql)이 곧 DB 주소다.
+      DB_URL: jdbc:mysql://mysql:3306/inventory?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD 환경변수가 필요합니다 (.env 파일 또는 export로 설정)}
+    # 무료 배포 서버(메모리 512MB)와 비슷한 조건에서 먼저 확인해 보기 위한 제한
+    mem_limit: 512m
+    cpus: 0.5
+
+volumes:
+  mysql-data:

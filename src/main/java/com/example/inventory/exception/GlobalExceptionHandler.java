@@ -6,6 +6,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 
@@ -32,6 +33,13 @@ public class GlobalExceptionHandler {
 		ErrorCode errorCode = ErrorCode.INVALID_INPUT;
 		return ResponseEntity.status(errorCode.getStatus())
 				.body(new ErrorResponse(errorCode.getStatus().value(), errorCode.name(), errorCode.getMessage(), errors));
+	}
+
+	// 쿼리·경로 파라미터의 타입 변환이 실패했을 때. (예: threshold=abc, GET /api/products/abc)
+	// 값 자체는 응답에 되돌려 주지 않고 어느 파라미터가 문제인지만 알려 준다.
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+		return toResponse(ErrorCode.INVALID_INPUT, "요청 파라미터 '" + e.getName() + "'의 형식이 올바르지 않습니다");
 	}
 
 	// 요청 JSON을 객체로 바꾸지 못할 때(문법 오류, 숫자 자리에 문자, 본문 없음). 검증 이전 단계의 오류다.

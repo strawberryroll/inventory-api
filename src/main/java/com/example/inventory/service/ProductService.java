@@ -5,7 +5,9 @@ import com.example.inventory.dto.PageResponse;
 import com.example.inventory.dto.ProductCreateRequest;
 import com.example.inventory.dto.ProductResponse;
 import com.example.inventory.dto.ProductUpdateRequest;
+import com.example.inventory.exception.BusinessException;
 import com.example.inventory.exception.DuplicateProductCodeException;
+import com.example.inventory.exception.ErrorCode;
 import com.example.inventory.exception.ProductHasHistoryException;
 import com.example.inventory.exception.ProductNotFoundException;
 import com.example.inventory.repository.ProductRepository;
@@ -82,6 +84,21 @@ public class ProductService {
 			products = productRepository.findByNameContainingIgnoreCaseOrProductCodeContainingIgnoreCase(trimmed, trimmed, fixed);
 		}
 		return PageResponse.from(products.map(ProductResponse::from));
+	}
+
+	// 재고가 threshold 이하인 상품을 재고가 가장 적은 순서로 조회한다. (급한 것부터 보여 주기 위해)
+	@Transactional(readOnly = true)
+	public PageResponse<ProductResponse> getLowStockProducts(int threshold, Pageable pageable) {
+		if (threshold < 0) {
+			// 7-4에서 만든 구조 덕분에 새 예외 클래스 없이 ErrorCode만 지정해 던질 수 있다. -> 400
+			throw new BusinessException(ErrorCode.INVALID_INPUT, "threshold는 0 이상이어야 합니다");
+		}
+
+		// 정렬 기준 여러 개: 재고 오름차순, 재고가 같으면 최신순. 클라이언트가 보낸 sort는 무시한다.
+		Sort sort = Sort.by(Sort.Direction.ASC, "stockQuantity").and(Sort.by(Sort.Direction.DESC, "id"));
+		Pageable fixed = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+
+		return PageResponse.from(productRepository.findByStockQuantityLessThanEqual(threshold, fixed).map(ProductResponse::from));
 	}
 
 	// 쓰기 작업이므로 readOnly를 쓰지 않는다. 변경 감지(UPDATE)는 트랜잭션이 끝날 때 실행되기 때문에

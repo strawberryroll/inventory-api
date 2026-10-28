@@ -54,6 +54,15 @@ public class ProductController {
 		return productService.getProducts(keyword, pageable);
 	}
 
+	// GET /api/products/low-stock?threshold=10  -> 재고가 threshold 이하인 상품 (재고 적은 순, 페이징)
+	// /api/products/{id} 와 모양이 비슷하지만, Spring은 고정 경로(/low-stock)를 변수 경로({id})보다 먼저 매칭하므로 충돌하지 않는다.
+	// defaultValue: threshold를 안 보내면 10으로 처리한다.
+	@GetMapping("/low-stock")
+	public PageResponse<ProductResponse> getLowStockProducts(
+			@RequestParam(defaultValue = "10") int threshold, Pageable pageable) {
+		return productService.getLowStockProducts(threshold, pageable);
+	}
+
 	// PUT /api/products/1  -> 이름·가격 수정. 수정된 상품을 200 OK로 돌려준다
 	@PutMapping("/{id}")
 	public ProductResponse update(@PathVariable Long id, @Valid @RequestBody ProductUpdateRequest request) {

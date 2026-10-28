@@ -23,4 +23,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 	Page<Product> findByNameContainingIgnoreCaseOrProductCodeContainingIgnoreCase(
 			String name, String productCode, Pageable pageable);
 
+	// 재고 부족 조회: 재고가 threshold "이하"인 상품 (LessThanEqual -> WHERE stock_quantity <= ?)
+	// (LessThan은 <, GreaterThanEqual은 >= 로 만들어진다)
+	Page<Product> findByStockQuantityLessThanEqual(int threshold, Pageable pageable);
+
 }

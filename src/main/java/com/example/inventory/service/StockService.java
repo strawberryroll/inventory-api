@@ -4,12 +4,15 @@ import com.example.inventory.domain.Product;
 import com.example.inventory.domain.StockHistory;
 import com.example.inventory.domain.StockType;
 import com.example.inventory.dto.ProductResponse;
+import com.example.inventory.dto.StockHistoryResponse;
 import com.example.inventory.exception.ProductNotFoundException;
 import com.example.inventory.repository.ProductRepository;
 import com.example.inventory.repository.StockHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 // 입고·출고처럼 재고 수량을 바꾸는 규칙을 담당한다.
 @Service
@@ -49,6 +52,20 @@ public class StockService {
 		stockHistoryRepository.save(new StockHistory(product, StockType.OUT, quantity));
 
 		return ProductResponse.from(product);
+	}
+
+	@Transactional(readOnly = true)
+	public List<StockHistoryResponse> getStockHistories(Long productId) {
+		// 없는 상품이면 404. 이 검사가 없으면 없는 id도 빈 목록(200 [])이 나와서
+		// "이력이 없는 상품"과 "없는 상품"을 구분할 수 없다.
+		if (!productRepository.existsById(productId)) {
+			throw new ProductNotFoundException(productId);
+		}
+
+		// DTO 변환은 트랜잭션 안(Service)에서 한다. 지연 로딩 객체를 안전하게 읽기 위해서다.
+		return stockHistoryRepository.findByProductIdOrderByCreatedAtDesc(productId).stream()
+				.map(StockHistoryResponse::from)
+				.toList();
 	}
 
 }

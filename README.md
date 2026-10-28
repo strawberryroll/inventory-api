@@ -211,3 +211,103 @@ postman collection run docs/postman/inventory-api.postman_collection.json
   ]
 }
 ```
+
+## 프로젝트 구조
+
+요청이 `Controller → Service → Repository → DB` 순서로 흐르고, 계층마다 역할을 나눴습니다.
+
+```text
+com.example.inventory
+├── controller   요청을 받고 응답 상태 코드를 정함 (ProductController, StockController)
+├── service      비즈니스 규칙과 트랜잭션 (ProductService, StockService)
+├── repository   DB 접근, Spring Data JPA (ProductRepository, StockHistoryRepository)
+├── domain       엔티티: DB 테이블과 매핑, 재고 규칙을 직접 가짐 (Product, StockHistory, StockType)
+├── dto          요청·응답 전용 객체 (엔티티를 외부에 직접 노출하지 않음)
+├── exception    ErrorCode, BusinessException과 자식 예외, 전역 예외 처리(GlobalExceptionHandler)
+└── config       Swagger 문서 설정 (OpenApiConfig)
+```
+
+```text
+src/test
+├── domain, service   단위 테스트 (Mockito, DB 없음)
+├── integration       통합 테스트 (실제 서버 + H2)
+└── resources         테스트 전용 설정 (application-test.yaml)
+```
+
+## 테이블 구조 (ERD)
+
+```mermaid
+erDiagram
+    products ||--o{ stock_histories : "입출고 이력"
+
+    products {
+        bigint id PK
+        varchar(50) product_code UK "상품코드 (중복 불가)"
+        varchar(100) name "상품명"
+        int price "가격"
+        int stock_quantity "현재 재고"
+        datetime created_at "등록 시각"
+    }
+
+    stock_histories {
+        bigint id PK
+        bigint product_id FK "상품"
+        varchar(10) type "IN(입고) 또는 OUT(출고)"
+        int quantity "수량 (항상 양수)"
+        datetime created_at "이력 시각"
+    }
+```
+
+- 현재 재고는 `products.stock_quantity`에 보관하고, 재고가 변할 때마다 `stock_histories`에 그 기록을 남깁니다. 수량은 항상 양수이고 증가·감소는 `type`으로 구분합니다.
+- 이력은 상품을 참조하지만 상품은 이력 목록을 갖지 않는 **단방향** 관계입니다. 상품별 이력은 `product_id`로 조회합니다.
+- 컬럼 타입은 엔티티 정의를 기준으로 그린 논리 구조입니다. 실제 DB에서의 타입은 DBMS에 따라 조금 다를 수 있습니다(예: `type`은 MySQL에서 `enum` 타입으로 만들어질 수 있음).
+
+## 설계 포인트와 고민한 점
+
+### 1. 재고가 음수가 되지 않게 하고, 재고와 이력을 함께 반영하기
+- **검사 위치**: 출고 규칙을 Service가 아니라 엔티티 메서드 `Product.decreaseStock()`에 두었습니다. 어디서 호출해도 이 검사를 건너뛸 수 없습니다. 재고와 같은 수량은 출고되어 0이 되고, 1개라도 초과하면 거절합니다.
+- **일관성**: 재고(`products`)와 이력(`stock_histories`)은 `@Transactional`로 한 번에 처리해서, 재고만 바뀌고 이력이 없는 상태가 남지 않게 했습니다.
+- **우회 차단**: 요청 DTO의 `@Positive`로 음수·0 수량을 막아 재고 검사를 우회하지 못하게 했습니다.
+- **검증**: 경계값(재고 10에서 10 출고, 11 출고)을 단위 테스트로, 재고 부족 시 DB의 재고가 그대로이고 이력이 0건인 것을 통합 테스트(H2)로 확인했습니다. 코드를 일부러 망가뜨려(`<`를 `<=`로 변경) 테스트가 실제로 실패하는지, `@Transactional`을 빼면 입고 통합 테스트가 실패하는지도 확인했습니다.
+- **한계**: 같은 상품에 두 요청이 **동시에** 출고하면 둘 다 재고 검사를 통과할 수 있습니다(개선 예정). 또한 JPA는 재고 `UPDATE`를 트랜잭션이 끝날 때 실행하므로, "이미 실행된 `UPDATE`를 되돌리는 롤백 자체"를 증명하는 테스트는 아직 없습니다.
+
+### 2. 입력 검증과 `int` 대신 `Integer`
+요청 DTO를 처음에 `int`로 만들었더니, 수량을 빠뜨린 요청(`{}`)이 검증에 도달하지 못하고 "본문을 읽을 수 없음"이라는 모호한 오류로 끝났습니다. JSON 변환기가 기본 타입 필드의 누락을 거부했기 때문입니다. `Integer`와 `@NotNull`로 바꿔서 어느 필드가 문제인지 `errors` 목록으로 알려 주도록 고쳤습니다. Postman 테스트를 만들다가 발견한 문제입니다.
+
+### 3. 에러 응답 통일과 구조 개선
+오류를 `status`, `code`, `message` 형식의 JSON으로 통일했습니다. 처음에는 예외마다 `@ExceptionHandler` 메서드를 만들었는데 예외가 늘수록 핸들러도 늘어서(7개), `ErrorCode` enum과 공통 부모 `BusinessException`으로 리팩터링했습니다(4개). 새 에러는 enum 항목 하나만 추가하면 되고 핸들러는 고치지 않습니다. 응답이 바뀌지 않았음은 기존 Postman 시나리오를 다시 실행해 확인했습니다. 메시지는 문장이라 바뀔 수 있으므로 클라이언트는 안정적인 `code`로 분기하도록 했습니다.
+
+### 4. 중복과 무결성을 두 겹으로 방어하기
+- 상품코드 중복은 **사전 검사**(친절한 `409` 메시지)와 DB의 **unique 제약**(동시 요청까지 막는 마지막 방어선)을 함께 씁니다. 사전 검사를 통과한 뒤 DB 제약에 걸리면 같은 `DUPLICATE_PRODUCT_CODE`로 변환합니다.
+- 입출고 이력이 있는 상품은 삭제할 수 없게(`409`) 했습니다. 이력은 재고 변동의 근거여서 상품과 함께 사라지면 안 된다고 판단했습니다. 이력까지 함께 지우는 방법은 이력 소실 위험이 있고, 삭제 대신 비활성화하는 소프트 삭제는 범위가 커서 개선 예정으로 남겼습니다.
+- 동시 요청 방어 코드는 예외 변환 로직을 단위 테스트로 확인했고, 실제 동시 요청으로 재현해 보지는 않았습니다.
+
+### 5. API 설계 선택
+- **페이징 응답을 직접 정의**(`PageResponse`)해서 Spring `Page`의 직렬화 형태나 버전에 JSON이 좌우되지 않게 했습니다.
+- 클라이언트가 보낸 `sort`는 **무시하고 서버에서 정렬을 고정**했습니다. 없는 필드로 정렬을 요청하면 `500`이 나는 문제를 막고, 재고 부족 조회는 급한 것부터 보이도록 재고 오름차순으로 정했습니다.
+- 검색어의 `%`가 와일드카드로 해석되지 않고 문자 그대로 검색되는 것을 확인했습니다. `/api/products/low-stock`과 `/api/products/{id}`가 충돌하지 않는 것도 테스트로 확인했습니다.
+- 숫자 자리에 문자가 들어간 파라미터(`threshold=abc`, `/api/products/abc`)도 같은 에러 형식으로 응답합니다.
+
+### 6. 테스트를 세 겹으로 쌓기
+1. **단위 테스트(Mockito)**: DB 없이 Service와 엔티티의 판단 로직을 검증합니다. "재고 부족이면 이력 저장이 호출되지 않는다" 같은 것을 확인합니다.
+2. **통합 테스트(H2)**: 실제 서버와 DB로 입출고 결과를 확인합니다. 테스트 전용 설정(`test` 프로파일)을 분리해서 `./gradlew test`가 MySQL과 비밀번호 없이 어디서나 돌아가게 했습니다.
+3. **API 테스트(Postman, 74개 요청)**: 실제 MySQL로 띄운 앱을 대상으로 정상 흐름, 입력 검증, 오류 응답, 페이징·검색을 확인합니다. CLI로 한 번에 실행할 수 있어 기능을 고친 뒤 회귀를 빠르게 확인했습니다.
+
+API 문서도 테스트합니다. Swagger 명세를 만든 뒤 직접 열어 보니 성공 응답이 빠진 API가 6개, 서버 확인용 API가 노출된 것을 발견해서 고치고, 같은 문제가 재발하지 않도록 명세를 검사하는 테스트를 추가했습니다.
+
+### 7. 설정과 비밀 관리
+DB 비밀번호는 코드와 Git에 두지 않고 환경변수(`DB_PASSWORD`)로 받습니다. `ddl-auto: update`는 개발 편의를 위한 설정입니다(아래 개선 예정 참고).
+
+## 개선 예정
+
+| 항목 | 내용 |
+|---|---|
+| 동시성 제어 | 같은 상품의 동시 출고 시 재고가 음수가 될 수 있음. 비관적 락(`@Lock`) 또는 낙관적 락(`@Version`) 적용 |
+| 롤백 검증 강화 | 이미 실행된 `UPDATE`가 롤백되는 것까지 증명하는 테스트, MySQL을 쓰는 Testcontainers 통합 테스트 |
+| 소프트 삭제 | 이력이 있는 상품을 삭제하는 대신 사용 중지로 처리 |
+| 정렬 옵션 | 허용된 필드에 한해 클라이언트가 정렬을 선택할 수 있게 확장 |
+| 검색 성능 | `LIKE '%키워드%'`는 인덱스를 쓰지 못함. 데이터가 많아지면 FULLTEXT 인덱스 등을 검토 |
+| 운영 환경 설정 | Swagger UI 비활성화, `ddl-auto`를 `validate`로 바꾸고 DB 마이그레이션 도구(Flyway 등) 도입 |
+| 인증·인가 | 현재는 누구나 호출 가능. 역할별 권한 도입 |
+| 배포 | Docker로 MySQL과 앱을 함께 실행, GitHub Actions로 테스트 자동 실행 |
+| 다른 DB 전환 | Oracle, MSSQL 등으로 전환해도 동작하는지 검증 (JPA 덕분에 이식성은 높을 것으로 예상하나 아직 확인하지 않음) |

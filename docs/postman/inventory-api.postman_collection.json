@@ -1,0 +1,2073 @@
+{
+  "info": {
+    "name": "inventory-api",
+    "description": "재고 관리 REST API 테스트 모음 (Spring Boot, http://localhost:8080)\n\n사용법\n1. 앱을 실행한다 (DB_PASSWORD 환경변수 필요).\n2. Collection의 Run 버튼으로 폴더 순서대로 실행한다. 앞 요청의 결과(productId 등)를 다음 요청이 사용한다.\n3. baseUrl은 Collection 변수에서 바꿀 수 있다.\n\n주의\n- 개발용 DB에서만 실행한다. 실행할 때마다 이력이 있는 테스트 상품(T{runId}-A)이 하나씩 남는다.\n- 목록 테스트는 데이터 개수와 상관없이 구조·정렬·기본값을 검증한다.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "runId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "productBId",
+      "value": ""
+    },
+    {
+      "key": "page0LastId",
+      "value": ""
+    },
+    {
+      "key": "longName",
+      "value": ""
+    },
+    {
+      "key": "longCode",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. 준비",
+      "item": [
+        {
+          "name": "[GET] 서버 확인 + 실행 ID 생성",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 실행할 때마다 새 runId를 만들어 상품코드가 겹치지 않게 한다 (T{runId}-A 형태)",
+                  "pm.collectionVariables.set(\"runId\", Date.now().toString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/hello",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hello"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. 상품 CRUD",
+      "item": [
+        {
+          "name": "[POST] 상품 등록 - 정상 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 201\", () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "// 다음 요청들에서 쓰도록 id를 저장한다",
+                  "pm.collectionVariables.set(\"productId\", b.id);",
+                  "pm.test(\"요청한 값이 응답에 반영됨\", () => {",
+                  "    pm.expect(b.name).to.eql(\"테스트 볼트\");",
+                  "    pm.expect(b.price).to.eql(500);",
+                  "    pm.expect(b.stockQuantity).to.eql(10);",
+                  "});",
+                  "pm.test(\"id와 createdAt은 서버가 채움\", () => {",
+                  "    pm.expect(b.id).to.be.a(\"number\");",
+                  "    pm.expect(b.createdAt).to.be.a(\"string\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"T{{runId}}-A\",\n  \"name\": \"테스트 볼트\",\n  \"price\": 500,\n  \"stockQuantity\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 상품 등록 - 상품코드 중복 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"code = DUPLICATE_PRODUCT_CODE\", () => pm.expect(pm.response.json().code).to.eql(\"DUPLICATE_PRODUCT_CODE\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"T{{runId}}-A\",\n  \"name\": \"테스트 볼트\",\n  \"price\": 500,\n  \"stockQuantity\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[GET] 단건 조회 - 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"요청한 id의 상품\", () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"productId\"))));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] 목록 - 방금 등록한 상품이 최신순 첫 번째",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"가장 최근 등록한 상품이 맨 앞\", () => pm.expect(pm.response.json().content[0].id).to.eql(Number(pm.collectionVariables.get(\"productId\"))));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[PUT] 수정 - 이름·가격만 바뀜 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"이름·가격이 수정됨\", () => {",
+                  "    pm.expect(b.name).to.eql(\"테스트 볼트 M10\");",
+                  "    pm.expect(b.price).to.eql(700);",
+                  "});",
+                  "pm.test(\"상품코드·재고수량은 그대로\", () => {",
+                  "    pm.expect(b.productCode).to.eql(\"T\" + pm.collectionVariables.get(\"runId\") + \"-A\");",
+                  "    pm.expect(b.stockQuantity).to.eql(10);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"테스트 볼트 M10\",\n  \"price\": 700\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[GET] 없는 상품 조회 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"code = PRODUCT_NOT_FOUND\", () => pm.expect(pm.response.json().code).to.eql(\"PRODUCT_NOT_FOUND\"));",
+                  "pm.test(\"message에 id 포함\", () => pm.expect(pm.response.json().message).to.include(\"999999999\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "999999999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[PUT] 없는 상품 수정 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"code = PRODUCT_NOT_FOUND\", () => pm.expect(pm.response.json().code).to.eql(\"PRODUCT_NOT_FOUND\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "999999999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"없는 상품\",\n  \"price\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. 입고·출고·이력",
+      "item": [
+        {
+          "name": "[POST] 입고 30 - 재고 10 -> 40",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"재고가 40\", () => pm.expect(pm.response.json().stockQuantity).to.eql(40));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/stock-in",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}",
+                "stock-in"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 30\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 출고 15 - 재고 40 -> 25",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"재고가 25\", () => pm.expect(pm.response.json().stockQuantity).to.eql(25));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/stock-out",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}",
+                "stock-out"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 15\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 출고 - 재고 부족 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INSUFFICIENT_STOCK\", () => pm.expect(pm.response.json().code).to.eql(\"INSUFFICIENT_STOCK\"));",
+                  "pm.test(\"message에 현재 재고와 요청 수량 포함\", () => {",
+                  "    pm.expect(pm.response.json().message).to.include(\"현재 재고=25\");",
+                  "    pm.expect(pm.response.json().message).to.include(\"요청 수량=1000\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/stock-out",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}",
+                "stock-out"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[GET] 재고 부족 실패 후 재고 그대로(롤백 확인)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"재고는 여전히 25\", () => pm.expect(pm.response.json().stockQuantity).to.eql(25));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] 입출고 이력 - 최신순, 실패한 출고는 없음",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"이력은 2건(입고, 출고)\", () => pm.expect(b).to.have.length(2));",
+                  "pm.test(\"최신순: 출고 15 -> 입고 30\", () => {",
+                  "    pm.expect(b[0].type).to.eql(\"OUT\");",
+                  "    pm.expect(b[0].quantity).to.eql(15);",
+                  "    pm.expect(b[1].type).to.eql(\"IN\");",
+                  "    pm.expect(b[1].quantity).to.eql(30);",
+                  "});",
+                  "pm.test(\"모두 이 상품의 이력\", () => b.forEach(h => pm.expect(h.productId).to.eql(Number(pm.collectionVariables.get(\"productId\")))));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/stock-histories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}",
+                "stock-histories"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[POST] 이력 없는 두 번째 상품 등록",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"productBId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"T{{runId}}-B\",\n  \"name\": \"이력 없는 상품\",\n  \"price\": 100,\n  \"stockQuantity\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[GET] 이력 없는 상품의 이력 - 200 빈 배열",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"빈 배열\", () => pm.expect(pm.response.json()).to.eql([]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productBId}}/stock-histories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productBId}}",
+                "stock-histories"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] 없는 상품의 이력 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"code = PRODUCT_NOT_FOUND\", () => pm.expect(pm.response.json().code).to.eql(\"PRODUCT_NOT_FOUND\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/999999999/stock-histories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "999999999",
+                "stock-histories"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[POST] 없는 상품 입고 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"code = PRODUCT_NOT_FOUND\", () => pm.expect(pm.response.json().code).to.eql(\"PRODUCT_NOT_FOUND\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/999999999/stock-in",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "999999999",
+                "stock-in"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 입고 수량 0 -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"errors에 quantity 필드 포함\", () => pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"quantity\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/stock-in",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}",
+                "stock-in"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 입고 수량 음수 -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"errors에 quantity 필드 포함\", () => pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"quantity\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/stock-in",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}",
+                "stock-in"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": -5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 출고 수량 누락({}) -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"errors에 quantity 필드 포함\", () => pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"quantity\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/stock-out",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}",
+                "stock-out"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 출고 수량 null -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"errors에 quantity 필드 포함\", () => pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"quantity\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/stock-out",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}",
+                "stock-out"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[GET] 잘못된 입력 후에도 재고 그대로",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"재고는 여전히 25\", () => pm.expect(pm.response.json().stockQuantity).to.eql(25));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. 입력 검증 (400)",
+      "item": [
+        {
+          "name": "[POST] 등록 - 상품명 빈 값",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"errors에 name 필드 포함\", () => pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"name\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"T{{runId}}-X\",\n  \"name\": \"\",\n  \"price\": 100,\n  \"stockQuantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 등록 - 상품명 공백만",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"errors에 name 필드 포함\", () => pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"name\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"T{{runId}}-X\",\n  \"name\": \"   \",\n  \"price\": 100,\n  \"stockQuantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 등록 - 가격 음수",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"errors에 price 필드 포함\", () => pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"price\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"T{{runId}}-X\",\n  \"name\": \"음수 가격\",\n  \"price\": -1,\n  \"stockQuantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 등록 - 가격 누락",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"errors에 price 필드 포함\", () => pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"price\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"T{{runId}}-X\",\n  \"name\": \"가격 누락\",\n  \"stockQuantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 등록 - 여러 필드 동시 오류",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"errors에 4개 필드가 모두 포함\", () => pm.expect(pm.response.json().errors.length).to.be.at.least(4));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"\",\n  \"name\": \"\",\n  \"price\": -1,\n  \"stockQuantity\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 등록 - 상품명 101자(너무 김)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"longName\", \"a\".repeat(101));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"errors에 name 필드 포함\", () => pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"name\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"T{{runId}}-X\",\n  \"name\": \"{{longName}}\",\n  \"price\": 100,\n  \"stockQuantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 등록 - 상품코드 51자(너무 김)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"longCode\", \"a\".repeat(51));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"errors에 productCode 필드 포함\", () => pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"productCode\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"{{longCode}}\",\n  \"name\": \"코드가 긴 상품\",\n  \"price\": 100,\n  \"stockQuantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 등록 - 깨진 JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_REQUEST_BODY\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_REQUEST_BODY\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 등록 - 가격에 문자열",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_REQUEST_BODY\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_REQUEST_BODY\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"T{{runId}}-X\",\n  \"name\": \"문자 가격\",\n  \"price\": \"abc\",\n  \"stockQuantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[POST] 등록 - 본문 없음",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_REQUEST_BODY\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_REQUEST_BODY\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[PUT] 수정 - 상품명 빈 값 + 가격 음수",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));",
+                  "pm.test(\"errors에 name 필드 포함\", () => pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"name\"));",
+                  "pm.test(\"errors에 price 필드 포함\", () => pm.expect(pm.response.json().errors.map(e => e.field)).to.include(\"price\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"price\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[PUT] 없는 상품 + 잘못된 본문 -> 검증이 먼저라 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"code = INVALID_INPUT\", () => pm.expect(pm.response.json().code).to.eql(\"INVALID_INPUT\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "999999999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"price\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[GET] 검증 실패 후에도 상품은 수정되지 않음",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"이름·가격이 수정 요청 전 값 그대로\", () => {",
+                  "    pm.expect(pm.response.json().name).to.eql(\"테스트 볼트 M10\");",
+                  "    pm.expect(pm.response.json().price).to.eql(700);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. 삭제",
+      "item": [
+        {
+          "name": "[DELETE] 이력 있는 상품 삭제 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"code = PRODUCT_HAS_HISTORY\", () => pm.expect(pm.response.json().code).to.eql(\"PRODUCT_HAS_HISTORY\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] 삭제 거절 후 상품·이력 그대로",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"이력 2건 그대로\", () => pm.expect(pm.response.json()).to.have.length(2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/stock-histories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}",
+                "stock-histories"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[DELETE] 이력 없는 상품 삭제 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productBId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productBId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] 삭제한 상품 조회 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"code = PRODUCT_NOT_FOUND\", () => pm.expect(pm.response.json().code).to.eql(\"PRODUCT_NOT_FOUND\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productBId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productBId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[DELETE] 없는 상품 삭제 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"code = PRODUCT_NOT_FOUND\", () => pm.expect(pm.response.json().code).to.eql(\"PRODUCT_NOT_FOUND\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "999999999"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. 목록 페이징",
+      "item": [
+        {
+          "name": "[GET] 기본 목록 - page 0, size 10",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"응답 필드가 정확히 5개\", () => pm.expect(pm.response.json()).to.have.all.keys(\"content\", \"page\", \"size\", \"totalElements\", \"totalPages\"));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"기본값 page 0, size 10\", () => {",
+                  "    pm.expect(b.page).to.eql(0);",
+                  "    pm.expect(b.size).to.eql(10);",
+                  "});",
+                  "pm.test(\"content 개수가 size 이하\", () => pm.expect(b.content.length).to.be.at.most(b.size));",
+                  "pm.test(\"totalPages = 올림(totalElements / size)\", () => pm.expect(b.totalPages).to.eql(Math.ceil(b.totalElements / b.size)));",
+                  "const ids = pm.response.json().content.map(p => p.id);",
+                  "pm.test(\"최신순(id 내림차순)\", () => pm.expect(ids).to.eql([...ids].sort((a, b) => b - a)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] size=5, page=0",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"응답 필드가 정확히 5개\", () => pm.expect(pm.response.json()).to.have.all.keys(\"content\", \"page\", \"size\", \"totalElements\", \"totalPages\"));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"size가 5\", () => pm.expect(b.size).to.eql(5));",
+                  "pm.test(\"content는 최대 5개\", () => pm.expect(b.content.length).to.be.at.most(5));",
+                  "// 다음 요청(page=1)과 비교하려고 이 페이지의 마지막 id를 저장한다",
+                  "if (b.content.length > 0) { pm.collectionVariables.set(\"page0LastId\", b.content[b.content.length - 1].id); }",
+                  "const ids = pm.response.json().content.map(p => p.id);",
+                  "pm.test(\"최신순(id 내림차순)\", () => pm.expect(ids).to.eql([...ids].sort((a, b) => b - a)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?page=0&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] size=5, page=1 - 앞 페이지보다 오래된 상품",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"page가 1\", () => pm.expect(b.page).to.eql(1));",
+                  "pm.test(\"앞 페이지의 마지막 id보다 작은 id부터 시작\", () => {",
+                  "    const prev = pm.collectionVariables.get(\"page0LastId\");",
+                  "    if (b.content.length > 0 && prev) { pm.expect(b.content[0].id).to.be.below(Number(prev)); }",
+                  "});",
+                  "const ids = pm.response.json().content.map(p => p.id);",
+                  "pm.test(\"최신순(id 내림차순)\", () => pm.expect(ids).to.eql([...ids].sort((a, b) => b - a)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?page=1&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] 범위를 넘은 page=99999 - 200 빈 목록",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"content가 빈 배열\", () => pm.expect(pm.response.json().content).to.eql([]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?page=99999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "99999"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] size=1000 - 100으로 제한",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"size가 최대값 100으로 제한\", () => pm.expect(pm.response.json().size).to.eql(100));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?size=1000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "1000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] page=-1 - 기본값 0으로 처리",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"page가 0\", () => pm.expect(pm.response.json().page).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?page=-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "-1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] size=0 - 기본값 10으로 처리",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"size가 10\", () => pm.expect(pm.response.json().size).to.eql(10));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?size=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] page=abc&size=abc - 기본값으로 처리",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"page 0, size 10\", () => {",
+                  "    pm.expect(pm.response.json().page).to.eql(0);",
+                  "    pm.expect(pm.response.json().size).to.eql(10);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?page=abc&size=abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "abc"
+                },
+                {
+                  "key": "size",
+                  "value": "abc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] sort=price,asc - 정렬 요청은 무시되고 id 내림차순",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "const ids = pm.response.json().content.map(p => p.id);",
+                  "pm.test(\"최신순(id 내림차순)\", () => pm.expect(ids).to.eql([...ids].sort((a, b) => b - a)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?sort=price,asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "price,asc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GET] sort=존재하지 않는 필드 - 500이 아니라 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "const ids = pm.response.json().content.map(p => p.id);",
+                  "pm.test(\"최신순(id 내림차순)\", () => pm.expect(ids).to.eql([...ids].sort((a, b) => b - a)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?sort=nosuchfield",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "nosuchfield"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

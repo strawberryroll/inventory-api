@@ -1,7 +1,6 @@
 package com.example.inventory.exception;
 
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -15,32 +14,11 @@ import java.util.List;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-	// @ExceptionHandler: 이 예외가 던져지면 아래 메서드가 실행된다. 상태 코드와 응답 본문을 모두 정할 수 있다.
-	@ExceptionHandler(ProductNotFoundException.class)
-	public ResponseEntity<ErrorResponse> handleProductNotFound(ProductNotFoundException e) {
-		return toResponse(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", e.getMessage());
-	}
-
-	@ExceptionHandler(DuplicateProductCodeException.class)
-	public ResponseEntity<ErrorResponse> handleDuplicateProductCode(DuplicateProductCodeException e) {
-		return toResponse(HttpStatus.CONFLICT, "DUPLICATE_PRODUCT_CODE", e.getMessage());
-	}
-
-	@ExceptionHandler(InsufficientStockException.class)
-	public ResponseEntity<ErrorResponse> handleInsufficientStock(InsufficientStockException e) {
-		return toResponse(HttpStatus.BAD_REQUEST, "INSUFFICIENT_STOCK", e.getMessage());
-	}
-
-	@ExceptionHandler(ProductHasHistoryException.class)
-	public ResponseEntity<ErrorResponse> handleProductHasHistory(ProductHasHistoryException e) {
-		return toResponse(HttpStatus.CONFLICT, "PRODUCT_HAS_HISTORY", e.getMessage());
-	}
-
-	// 안전망: 사전 검사로 못 막은 DB 제약 위반(unique, 외래키 등)이 500 대신 409로 나가게 한다.
-	// Spring이 DB 종류와 상관없이 제약 위반을 이 예외로 변환해 준다. SQL 오류 내용은 응답에 노출하지 않는다.
-	@ExceptionHandler(DataIntegrityViolationException.class)
-	public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e) {
-		return toResponse(HttpStatus.CONFLICT, "DATA_INTEGRITY_VIOLATION", "데이터 제약 조건에 위반되어 처리할 수 없습니다");
+	// BusinessException의 자식 예외(상품 없음, 중복, 재고 부족, 이력 존재)를 모두 이 메서드 하나가 받는다.
+	// 상태 코드와 code는 예외가 가진 ErrorCode에서 꺼내므로, 새 예외가 늘어도 이 메서드는 고치지 않는다.
+	@ExceptionHandler(BusinessException.class)
+	public ResponseEntity<ErrorResponse> handleBusiness(BusinessException e) {
+		return toResponse(e.getErrorCode(), e.getMessage());
 	}
 
 	// @Valid 검증에 실패하면 Spring이 이 예외를 던진다. Controller 메서드가 실행되기 전이라 Service·DB에는 닿지 않는다.
@@ -51,21 +29,30 @@ public class GlobalExceptionHandler {
 				.map(fieldError -> new ErrorResponse.FieldError(fieldError.getField(), fieldError.getDefaultMessage()))
 				.toList();
 
-		HttpStatus status = HttpStatus.BAD_REQUEST;
-		return ResponseEntity.status(status)
-				.body(new ErrorResponse(status.value(), "INVALID_INPUT", "입력값이 올바르지 않습니다", errors));
+		ErrorCode errorCode = ErrorCode.INVALID_INPUT;
+		return ResponseEntity.status(errorCode.getStatus())
+				.body(new ErrorResponse(errorCode.getStatus().value(), errorCode.name(), errorCode.getMessage(), errors));
 	}
 
 	// 요청 JSON을 객체로 바꾸지 못할 때(문법 오류, 숫자 자리에 문자, 본문 없음). 검증 이전 단계의 오류다.
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException e) {
-		return toResponse(HttpStatus.BAD_REQUEST, "INVALID_REQUEST_BODY",
-				"요청 본문을 읽을 수 없습니다. JSON 형식과 값의 타입을 확인하세요");
+		ErrorCode errorCode = ErrorCode.INVALID_REQUEST_BODY;
+		return toResponse(errorCode, errorCode.getMessage());
 	}
 
-	// 핸들러마다 반복되는 응답 생성 코드를 한 곳으로 모은다.
-	private ResponseEntity<ErrorResponse> toResponse(HttpStatus status, String code, String message) {
-		return ResponseEntity.status(status).body(new ErrorResponse(status.value(), code, message));
+	// 안전망: 사전 검사로 못 막은 DB 제약 위반(unique, 외래키 등)이 500 대신 409로 나가게 한다.
+	// Spring이 DB 종류와 상관없이 제약 위반을 이 예외로 변환해 준다. SQL 오류 내용은 응답에 노출하지 않는다.
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+		ErrorCode errorCode = ErrorCode.DATA_INTEGRITY_VIOLATION;
+		return toResponse(errorCode, errorCode.getMessage());
+	}
+
+	// 응답 생성 코드를 한 곳으로 모은다. status는 ErrorCode에서, code는 ErrorCode의 이름에서 가져온다.
+	private ResponseEntity<ErrorResponse> toResponse(ErrorCode errorCode, String message) {
+		return ResponseEntity.status(errorCode.getStatus())
+				.body(new ErrorResponse(errorCode.getStatus().value(), errorCode.name(), message));
 	}
 
 }

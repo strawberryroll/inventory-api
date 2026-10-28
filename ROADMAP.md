@@ -41,7 +41,7 @@ com.example.inventory
 
 ## 현재 단계
 
-**7단계. 예외 처리 · 유효성 검사**
+**8단계. 추가 기능**
 
 ---
 
@@ -80,15 +80,21 @@ com.example.inventory
 **완료 기준**: 재고 10개에 20개 출고 시 에러, 이력 테이블에 기록 확인
 
 **메모**
-- 이력이 있는 상품은 FK 때문에 삭제가 막힘 → 7단계에서 `409 Conflict`로 처리 검토
+- 이력이 있는 상품은 FK 때문에 삭제가 막힘 → 7-3에서 `409 Conflict`로 처리 완료 (소프트 삭제는 개선 예정)
 - 동시에 출고하면 재고가 음수가 될 수 있음(동시성) → 락/`@Version`은 개선 예정으로 남김
 
 ### 7단계. 예외 처리 · 유효성 검사
-- [ ] 요청 DTO에 `@NotBlank`, `@Positive`, `@PositiveOrZero` 등 적용 + `@Valid`
-- [ ] 커스텀 예외 클래스 (상품 없음, 상품코드 중복, 재고 부족)
-- [ ] `@RestControllerAdvice` 전역 예외 처리
-    - 상품 없음 → 404, 중복 → 409, 재고 부족·입력 오류 → 400
-    - 에러 응답 JSON 형식 통일 (예: `status`, `code`, `message`)
+- [x] 7-1. 전역 예외 처리 + 에러 응답 통일 (예외별 `@ExceptionHandler`)
+    - 커스텀 예외 클래스 (상품 없음, 상품코드 중복, 재고 부족)
+    - `@RestControllerAdvice`: 상품 없음 → 404, 중복 → 409, 재고 부족 → 400
+    - 에러 응답 JSON 형식 통일: `status`, `code`, `message`
+- [x] 7-2. 입력 유효성 검사
+    - 요청 DTO에 `@NotBlank`, `@Size`, `@PositiveOrZero` 등 적용 + `@Valid`
+    - 검증 오류·깨진 JSON → 400 (틀린 필드 목록 포함)
+- [x] 7-3. DB 제약 위반 처리
+    - 이력이 있는 상품 삭제 → 409, 상품코드 동시 중복(unique 위반) → 409
+- [x] 7-4. 예외 구조 리팩터링: `ErrorCode` enum + 공통 부모 `BusinessException`으로 핸들러 하나로 통합
+    - 7-1~7-3의 Postman 시나리오를 재실행해 응답이 그대로인지 회귀 확인
 
 ### 8단계. 추가 기능
 - [ ] 재고 부족 상품 조회 `GET /api/products/low-stock?threshold=10`
@@ -137,7 +143,7 @@ com.example.inventory
 - [ ] JPA, Hibernate, Spring Data JPA의 차이는?
 - [x] Controller, Service, Repository의 역할은?
 - [x] Entity와 DTO를 왜 나누나요?
-- [ ] `@Transactional`은 왜 필요한가요?
+- [x] `@Transactional`은 왜 필요한가요?
 - [x] 변경 감지(dirty checking)란?
-- [ ] 출고 시 재고가 음수가 되지 않게 어떻게 막았나요?
+- [x] 출고 시 재고가 음수가 되지 않게 어떻게 막았나요?
 - [ ] 전역 예외 처리를 왜 했나요?

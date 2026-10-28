@@ -1,0 +1,531 @@
+{
+  "info": {
+    "name": "inventory-seed",
+    "description": "테스트용 상품 12개(S-001 ~ S-012) 등록.\nImport 후 Run을 누르면 위에서 아래로 12개를 등록한다. 이미 있는 코드는 409로 건너뛰므로 여러 번 실행해도 된다.\n개발용 DB에서만 실행한다.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "[POST] S-001 볼트 M6",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 이미 등록돼 있어도(409) 통과시켜서 여러 번 실행해도 실패하지 않게 한다",
+              "pm.test(\"201 등록 또는 409 이미 있음\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S-001\",\n  \"name\": \"볼트 M6\",\n  \"price\": 100,\n  \"stockQuantity\": 5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POST] S-002 볼트 M8",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 이미 등록돼 있어도(409) 통과시켜서 여러 번 실행해도 실패하지 않게 한다",
+              "pm.test(\"201 등록 또는 409 이미 있음\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S-002\",\n  \"name\": \"볼트 M8\",\n  \"price\": 200,\n  \"stockQuantity\": 50\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POST] S-003 볼트 M10",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 이미 등록돼 있어도(409) 통과시켜서 여러 번 실행해도 실패하지 않게 한다",
+              "pm.test(\"201 등록 또는 409 이미 있음\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S-003\",\n  \"name\": \"볼트 M10\",\n  \"price\": 300,\n  \"stockQuantity\": 8\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POST] S-004 너트 M6",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 이미 등록돼 있어도(409) 통과시켜서 여러 번 실행해도 실패하지 않게 한다",
+              "pm.test(\"201 등록 또는 409 이미 있음\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S-004\",\n  \"name\": \"너트 M6\",\n  \"price\": 400,\n  \"stockQuantity\": 100\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POST] S-005 너트 M8",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 이미 등록돼 있어도(409) 통과시켜서 여러 번 실행해도 실패하지 않게 한다",
+              "pm.test(\"201 등록 또는 409 이미 있음\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S-005\",\n  \"name\": \"너트 M8\",\n  \"price\": 500,\n  \"stockQuantity\": 3\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POST] S-006 너트 M10",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 이미 등록돼 있어도(409) 통과시켜서 여러 번 실행해도 실패하지 않게 한다",
+              "pm.test(\"201 등록 또는 409 이미 있음\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S-006\",\n  \"name\": \"너트 M10\",\n  \"price\": 600,\n  \"stockQuantity\": 70\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POST] S-007 와셔 S",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 이미 등록돼 있어도(409) 통과시켜서 여러 번 실행해도 실패하지 않게 한다",
+              "pm.test(\"201 등록 또는 409 이미 있음\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S-007\",\n  \"name\": \"와셔 S\",\n  \"price\": 700,\n  \"stockQuantity\": 10\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POST] S-008 와셔 M",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 이미 등록돼 있어도(409) 통과시켜서 여러 번 실행해도 실패하지 않게 한다",
+              "pm.test(\"201 등록 또는 409 이미 있음\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S-008\",\n  \"name\": \"와셔 M\",\n  \"price\": 800,\n  \"stockQuantity\": 200\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POST] S-009 와셔 L",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 이미 등록돼 있어도(409) 통과시켜서 여러 번 실행해도 실패하지 않게 한다",
+              "pm.test(\"201 등록 또는 409 이미 있음\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S-009\",\n  \"name\": \"와셔 L\",\n  \"price\": 900,\n  \"stockQuantity\": 0\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POST] S-010 스프링 A",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 이미 등록돼 있어도(409) 통과시켜서 여러 번 실행해도 실패하지 않게 한다",
+              "pm.test(\"201 등록 또는 409 이미 있음\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S-010\",\n  \"name\": \"스프링 A\",\n  \"price\": 1000,\n  \"stockQuantity\": 15\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POST] S-011 스프링 B",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 이미 등록돼 있어도(409) 통과시켜서 여러 번 실행해도 실패하지 않게 한다",
+              "pm.test(\"201 등록 또는 409 이미 있음\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S-011\",\n  \"name\": \"스프링 B\",\n  \"price\": 1100,\n  \"stockQuantity\": 9\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POST] S-012 베어링 6204",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 이미 등록돼 있어도(409) 통과시켜서 여러 번 실행해도 실패하지 않게 한다",
+              "pm.test(\"201 등록 또는 409 이미 있음\", () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S-012\",\n  \"name\": \"베어링 6204\",\n  \"price\": 1200,\n  \"stockQuantity\": 500\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    }
+  ]
+}

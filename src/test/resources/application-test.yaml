@@ -1,0 +1,16 @@
+# 테스트 전용 설정. 테스트 클래스에 @ActiveProfiles("test")를 붙였을 때만 적용되고,
+# 운영용 application.yaml의 같은 항목(MySQL 연결)을 덮어쓴다.
+spring:
+  datasource:
+    # 메모리 안에만 만들어졌다가 테스트가 끝나면 사라지는 임시 DB (H2). 실제 비밀번호나 데이터가 없다.
+    # MODE=MySQL: MySQL과 비슷하게 동작하도록 맞춘다.
+    url: jdbc:h2:mem:inventory-test;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      # 테스트를 시작할 때 엔티티대로 테이블을 새로 만들고, 끝나면 지운다.
+      ddl-auto: create-drop
+    show-sql: false

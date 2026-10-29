@@ -8,6 +8,14 @@ Spring Boot와 JPA로 만들었고, 재고가 음수가 되지 않도록 막는 
 - 재고 부족 상품 조회
 - Swagger UI로 API 문서 제공 (`/swagger-ui.html`)
 
+## 데모 서버
+
+**https://inventory-api-zvz1.onrender.com** (접속하면 Swagger UI로 이동합니다. 직접 요청을 보내 볼 수 있습니다.)
+
+- **무료 서버라서 15분 이상 접속이 없으면 잠듭니다.** 잠든 뒤의 **첫 접속은 약 1분 20초**(실측 84초) 걸리고, 깨어난 뒤에는 0.5초 안팎으로 응답합니다. 처음 열었을 때 화면이 오래 안 뜨면 잠시만 기다려 주세요.
+- 누구나 등록·수정·삭제를 시험해 볼 수 있는 **데모용**입니다. 데이터는 예고 없이 초기화될 수 있습니다.
+- 앱은 [Render](https://render.com)(Docker), DB는 [TiDB Cloud](https://www.pingcap.com/tidb-cloud/) Starter(MySQL 호환)에서 실행됩니다. 자세한 내용은 아래 "배포" 섹션을 참고하세요.
+
 ## 기술 스택
 
 | 구분 | 사용 기술 |
@@ -84,7 +92,7 @@ docker compose up --build
 - 내 컴퓨터에서 이미 8080 포트를 쓰고 있다면 `APP_PORT=8081 docker compose up --build`처럼 바꿔서 실행하세요.
 - 중지: `docker compose down` (데이터는 유지) / 데이터까지 삭제: `docker compose down -v`
 - `.env`는 Git에 올라가지 않습니다. 비밀번호는 이 파일(또는 환경변수 `DB_PASSWORD`)로만 전달합니다.
-- `docker-compose.yml`은 앱의 메모리를 512MB로 제한해서 무료 배포 서버와 비슷한 조건으로 실행합니다. 이 조건에서도 전체 Postman Collection(74개 요청)이 통과합니다.
+- `docker-compose.yml`은 앱의 메모리를 512MB로 제한해서 무료 배포 서버와 비슷한 조건으로 실행합니다. 이 조건에서도 전체 Postman Collection이 통과합니다.
 
 ### 배포용 환경변수
 
@@ -102,12 +110,12 @@ docker compose up --build
 ```bash
 ./gradlew test
 ```
-**MySQL이나 환경변수 없이** 실행됩니다. 통합 테스트는 테스트 전용 인메모리 DB(H2)를 사용합니다. 총 42개입니다.
+**MySQL이나 환경변수 없이** 실행됩니다. 통합 테스트는 테스트 전용 인메모리 DB(H2)를 사용합니다. 총 43개입니다.
 
 | 종류 | 개수 | 내용 |
 |---|---|---|
 | 단위 테스트 | 27 | 재고 규칙(엔티티), Service 로직을 Mockito로 검증. DB를 사용하지 않음 |
-| 통합 테스트 | 14 | 실제 서버와 H2 DB로 입출고 동작, 생성된 API 문서의 내용 검증 |
+| 통합 테스트 | 15 | 실제 서버와 H2 DB로 입출고 동작, 생성된 API 문서의 내용, 루트 주소 이동 검증 |
 | 시동 테스트 | 1 | 앱이 정상적으로 시작되는지 확인 |
 
 ### API 테스트 (Postman)
@@ -115,7 +123,7 @@ docker compose up --build
 
 | 파일 | 내용 |
 |---|---|
-| `inventory-api.postman_collection.json` | 전체 API 테스트 (요청 74개, 검증 187개). 정상 흐름, 입력 검증, 오류 응답, 페이징·검색, API 문서까지 확인 |
+| `inventory-api.postman_collection.json` | 전체 API 테스트 (요청 75개, 검증 189개). 정상 흐름, 입력 검증, 오류 응답, 페이징·검색, API 문서까지 확인 |
 | `inventory-seed.postman_collection.json` | 테스트용 상품 12개(`S-001`~`S-012`) 등록 |
 
 Postman에서 **Import**한 뒤 Collection의 **Run**을 누르거나, Postman CLI로 실행합니다.
@@ -277,7 +285,7 @@ erDiagram
     stock_histories {
         bigint id PK
         bigint product_id FK "상품"
-        varchar(10) type "IN(입고) 또는 OUT(출고)"
+        enum type "IN(입고) 또는 OUT(출고)"
         int quantity "수량 (항상 양수)"
         datetime created_at "이력 시각"
     }
@@ -285,7 +293,7 @@ erDiagram
 
 - 현재 재고는 `products.stock_quantity`에 보관하고, 재고가 변할 때마다 `stock_histories`에 그 기록을 남깁니다. 수량은 항상 양수이고 증가·감소는 `type`으로 구분합니다.
 - 이력은 상품을 참조하지만 상품은 이력 목록을 갖지 않는 **단방향** 관계입니다. 상품별 이력은 `product_id`로 조회합니다.
-- 컬럼 타입은 엔티티 정의를 기준으로 그린 논리 구조입니다. 실제 DB에서의 타입은 DBMS에 따라 조금 다를 수 있습니다(예: `type`은 MySQL에서 `enum` 타입으로 만들어질 수 있음).
+- 컬럼 타입은 엔티티 정의를 기준으로 그린 논리 구조이고, 실제 DB의 타입은 DBMS에 따라 조금 다를 수 있습니다. MySQL 호환 DB(TiDB)에 테이블을 만들 때 Hibernate가 출력한 DDL에서 `type`이 `enum('IN','OUT')`으로 생성되는 것을 확인했습니다.
 
 ## 설계 포인트와 고민한 점
 
@@ -316,11 +324,19 @@ erDiagram
 ### 6. 테스트를 세 겹으로 쌓기
 1. **단위 테스트(Mockito)**: DB 없이 Service와 엔티티의 판단 로직을 검증합니다. "재고 부족이면 이력 저장이 호출되지 않는다" 같은 것을 확인합니다.
 2. **통합 테스트(H2)**: 실제 서버와 DB로 입출고 결과를 확인합니다. 테스트 전용 설정(`test` 프로파일)을 분리해서 `./gradlew test`가 MySQL과 비밀번호 없이 어디서나 돌아가게 했습니다.
-3. **API 테스트(Postman, 74개 요청)**: 실제 MySQL로 띄운 앱을 대상으로 정상 흐름, 입력 검증, 오류 응답, 페이징·검색을 확인합니다. CLI로 한 번에 실행할 수 있어 기능을 고친 뒤 회귀를 빠르게 확인했습니다.
+3. **API 테스트(Postman, 75개 요청)**: 실제 MySQL로 띄운 앱을 대상으로 정상 흐름, 입력 검증, 오류 응답, 페이징·검색을 확인합니다. CLI로 한 번에 실행할 수 있어 기능을 고친 뒤 회귀를 빠르게 확인했습니다.
 
 API 문서도 테스트합니다. Swagger 명세를 만든 뒤 직접 열어 보니 성공 응답이 빠진 API가 6개, 서버 확인용 API가 노출된 것을 발견해서 고치고, 같은 문제가 재발하지 않도록 명세를 검사하는 테스트를 추가했습니다.
 
-### 7. 설정과 비밀 관리
+### 7. 배포하면서 겪은 일
+- **DB와 앱을 분리**했습니다. 로컬에서는 `docker compose`로 앱과 MySQL을 함께 띄우고, 배포에서는 앱은 Render, DB는 TiDB Cloud로 나눴습니다. 접속 주소·사용자·비밀번호를 환경변수(`DB_URL` 등)로 받게 해 두어서 코드 변경 없이 같은 이미지를 어디서든 쓸 수 있었습니다.
+- **외부 DB는 암호화 연결이 필수**여서 로컬에서 쓰던 `useSSL=false`를 쓸 수 없었습니다. 배포 전에 내 컴퓨터의 앱을 클라우드 DB에 먼저 연결해 보고(`sslMode=VERIFY_IDENTITY`), 같은 값을 Render에 넣는 순서로 문제를 줄였습니다.
+- **무료 서버의 한계를 미리 측정**했습니다. Docker로 CPU 0.1, 메모리 512MB 조건을 흉내 내자 시작에 약 194초가 걸렸고, JVM 옵션(`-XX:TieredStopAtLevel=1`)으로 약 97초까지 줄였습니다. 실제 Render에서 잠든 뒤 첫 접속은 84초였습니다. 잠드는 서버의 구조적인 한계라서 README에 안내문으로 남겼습니다.
+- **프록시 뒤에서 동작하도록** 설정했습니다(`forward-headers-strategy`). 배포 환경에서는 앞단이 https를 받아 앱에는 http로 전달하는데, 이 설정이 있어서 Swagger가 `https` 주소를 쓰는 것을 실제 배포 주소에서 확인했습니다.
+- **첫인상**: 배포 주소로 들어가면 404 오류 화면이 보이는 문제를 발견해서, 루트(`/`) 접속 시 Swagger UI로 이동하게 했습니다.
+- 배포된 서버에 Postman Collection을 실행하다가, 일부 테스트가 **다른 폴더가 만든 데이터에 의존**하는 설계 약점을 발견했습니다. 폴더를 골라 실행해도 통과하도록 고칠 예정입니다.
+
+### 8. 설정과 비밀 관리
 DB 비밀번호는 코드와 Git에 두지 않고 환경변수(`DB_PASSWORD`)로 받습니다. `ddl-auto: update`는 개발 편의를 위한 설정입니다(아래 개선 예정 참고).
 
 ## 개선 예정
@@ -334,5 +350,5 @@ DB 비밀번호는 코드와 Git에 두지 않고 환경변수(`DB_PASSWORD`)로
 | 검색 성능 | `LIKE '%키워드%'`는 인덱스를 쓰지 못함. 데이터가 많아지면 FULLTEXT 인덱스 등을 검토 |
 | 운영 환경 설정 | Swagger UI 비활성화, `ddl-auto`를 `validate`로 바꾸고 DB 마이그레이션 도구(Flyway 등) 도입 |
 | 인증·인가 | 현재는 누구나 호출 가능. 역할별 권한 도입 |
-| 배포 | Docker로 MySQL과 앱을 함께 실행, GitHub Actions로 테스트 자동 실행 |
+| 배포 | GitHub Actions로 테스트 자동 실행, AWS(EC2·RDS 등)로 이전해 보기, 잠든 뒤 첫 접속 지연(콜드 스타트) 완화 |
 | 다른 DB 전환 | Oracle, MSSQL 등으로 전환해도 동작하는지 검증 (JPA 덕분에 이식성은 높을 것으로 예상하나 아직 확인하지 않음) |

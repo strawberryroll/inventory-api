@@ -41,7 +41,7 @@ com.example.inventory
 
 ## 현재 단계
 
-**9단계. 포트폴리오 마무리 (README.md)**
+**10단계. 배포 ✅ 완료** (데모 서버 운영 중. 다음 후보: 11단계 AWS 이전)
 
 ---
 
@@ -105,8 +105,37 @@ com.example.inventory
 
 ### 9단계. 포트폴리오 마무리
 - [x] README.md: 목적, 기술 스택, 실행 방법, API 목록·예시, 테이블 구조(ERD), 고민한 점, 개선 예정
-- [ ] (선택) Docker로 MySQL + 앱 실행
-- [ ] (선택) 지원 회사 DB(Oracle/MSSQL)로 전환 테스트
+- [x] (선택) Docker로 MySQL + 앱 실행 (10-1에서 `docker compose`로 완료)
+- [ ] (선택) 지원 회사 DB(Oracle/MSSQL)로 전환 테스트 (해당 DB 환경이 없어 미실시, README 개선 예정에 기재)
+
+### 10단계. 배포 (Render + TiDB Cloud)
+- [x] 10-1. 배포 준비
+    - DB 주소·포트를 환경변수로(`DB_URL`, `PORT`), 배포용 설정 `application-prod.yaml`
+    - `Dockerfile`(다단계 빌드), `docker-compose.yml`(앱 + MySQL), `.env.example`
+    - Docker에서 전체 Postman Collection 통과 확인, 저사양(CPU 0.1) 시작 시간 측정 → JVM 옵션으로 약 194초 → 97초
+- [x] 10-2. 외부 서비스 준비
+    - TiDB Cloud Starter(도쿄, MySQL 호환) 생성, `inventory` DB 생성
+    - 내 컴퓨터의 앱을 클라우드 DB에 먼저 연결해 테이블 자동 생성과 seed 등록 확인
+    - Render 가입 (GitHub 연동)
+- [x] 10-3. 배포와 검증
+    - Render Web Service(Docker, Free) 배포, 환경변수 입력, 배포 주소: https://inventory-api-zvz1.onrender.com
+    - 배포 서버에 Postman 폴더 실행, 루트(`/`) 접속 시 Swagger UI로 이동하도록 추가
+    - 잠든 뒤 첫 접속 지연 실측: 약 84초 (이후 0.5초)
+- [x] 10-4. README에 데모 서버 주소·측정 결과·배포 경험 반영, 저장소 About 홈페이지 설정
+- [x] Postman Collection 보강: 일부 테스트가 다른 폴더의 데이터에 의존하던 문제를 고쳐 폴더를 골라 실행해도 통과 (77개 요청, 191개 검증)
+
+**완료 기준**: 배포 주소에서 API 동작, README에 주소 반영 ✅
+
+**메모**
+- 데모 서버는 쓰기 API도 공개 상태(데모용 데이터만 사용). 오남용되면 서비스 중단 또는 데이터 재생성
+- 무료 서버는 15분 이상 접속이 없으면 잠듦 → 첫 접속 약 1분 20초 (README에 안내)
+- 비밀번호는 코드·Git·대화에 남기지 않고 Render·IntelliJ 환경변수에만 입력
+
+### 11단계 (후보). AWS로 이전
+- [ ] 같은 Dockerfile로 AWS(EC2 또는 Lightsail 등)에 배포, DB는 RDS 또는 같은 서버의 MySQL 컨테이너
+- [ ] 비용 안전장치(예산 알림) 설정, 카드·무료 크레딧 조건은 가입 시점에 공식 페이지에서 확인
+- [ ] README에 "Render → AWS 이전" 경험 추가
+- 그 밖의 후보: GitHub Actions로 테스트 자동 실행, 잠든 뒤 첫 접속 지연(콜드 스타트) 완화
 
 ---
 

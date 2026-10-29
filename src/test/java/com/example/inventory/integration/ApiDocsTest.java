@@ -161,6 +161,16 @@ class ApiDocsTest {
 	}
 
 	@Test
+	@DisplayName("루트(/) 주소로 접속하면 Swagger UI로 이동한다")
+	void root_redirectsToSwaggerUi() throws Exception {
+		// HttpClient는 기본적으로 이동(리다이렉트)을 따라가지 않아서, 이동 응답(302) 자체를 확인할 수 있다.
+		HttpResponse<String> response = get("/");
+
+		assertThat(response.statusCode()).isEqualTo(302);
+		assertThat(response.headers().firstValue("Location")).hasValue("/swagger-ui.html");
+	}
+
+	@Test
 	@DisplayName("Swagger UI 화면에 접속할 수 있다")
 	void swaggerUi_isAccessible() throws Exception {
 		assertThat(get("/swagger-ui/index.html").statusCode()).isEqualTo(200);

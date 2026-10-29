@@ -30,6 +30,10 @@
       "value": ""
     },
     {
+      "key": "searchProduct2Id",
+      "value": ""
+    },
+    {
       "key": "lowProductId",
       "value": ""
     },
@@ -2124,6 +2128,49 @@
           }
         },
         {
+          "name": "[POST] 검색용 상품 등록 (페이징 확인용 두 번째)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"searchProduct2Id\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"T{{runId}}-PG2\",\n  \"name\": \"페이징테스트{{runId}}\",\n  \"price\": 100,\n  \"stockQuantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
           "name": "[GET] 이름으로 검색 - 정확히 1건",
           "event": [
             {
@@ -2489,6 +2536,35 @@
                 "api",
                 "products",
                 "{{searchProductId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[DELETE] 검색용 두 번째 상품 정리 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{searchProduct2Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{searchProduct2Id}}"
               ]
             }
           }

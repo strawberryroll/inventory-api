@@ -3003,6 +3003,32 @@
               ]
             }
           }
+        },
+        {
+          "name": "[GET] / - 루트 주소로 접속하면 Swagger UI 화면이 열림",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"이동한 뒤 HTML 화면(Swagger UI)이 열림\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"text/html\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": []
+            }
+          }
         }
       ]
     }
